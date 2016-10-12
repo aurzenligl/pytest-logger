@@ -1,52 +1,92 @@
-pytest-logger
-===================================
+Pytest-logger is a pytest plugin configuring handlers for loggers from Python logging module.
 
-.. image:: https://travis-ci.org/aurzenligl/pytest-logger.svg?branch=master
-    :target: https://travis-ci.org/aurzenligl/pytest-logger
-    :alt: See Build Status on Travis CI
+You can install pytest-logger via ``pip`` from ``PyPI``::
 
-.. image:: https://ci.appveyor.com/api/projects/status/github/aurzenligl/pytest-logger?branch=master
-    :target: https://ci.appveyor.com/project/aurzenligl/pytest-logger/branch/master
-    :alt: See Build Status on AppVeyor
+    $ [sudo] pip install pytest-logger
 
-Plugin configuring handlers for loggers from Python logging module.
+Plugin puts logs on per-logger basis to:
+  - standard output,
+  - files within log-specific directory under pytest's ``tmpdir_factory`` session directory.
 
-----
+You can setup plugin using hooks::
 
-This `Pytest`_ plugin was generated with `Cookiecutter`_ along with `@hackebrot`_'s `Cookiecutter-pytest-plugin`_ template.
+    #conftest.py
+    import os
 
+    def pytest_logger_stdoutloggers(item):
+        return ['foo', 'bar']
 
-Features
---------
+    def pytest_logger_fileloggers(item):
+        return ['foo', 'bar']
 
-* TODO
+    def pytest_logger_logdirlink(config):
+        return os.path.join(os.path.dirname(__file__), 'mylogs')
 
+have logging tests or libraries (including fixtures)::
 
-Requirements
-------------
+    #test_something.py
+    import pytest
+    import logging
 
-* TODO
+    foo = logging.getLogger('foo')
+    foo.setLevel(logging.INFO)
 
+    bar = logging.getLogger('bar')
 
-Installation
-------------
+    @pytest.yield_fixture(scope='session')
+    def session_thing():
+        foo.info('constructing session thing')
+        yield
+        foo.info('destroying session thing')
 
-You can install "pytest-logger" via `pip`_ from `PyPI`_::
+    @pytest.yield_fixture
+    def testcase_thing():
+        foo.info('constructing testcase thing')
+        yield
+        foo.info('destroying testcase thing')
 
-    $ pip install pytest-logger
+    def test_one(session_thing, testcase_thing):
+        foo.info('one executes')
+        bar.warning('this test does nothing aside from logging')
 
+    def test_two(session_thing, testcase_thing):
+        foo.info('two executes')
+        bar.warning('neither does this')
 
-Usage
------
+and expect output in terminal (if not captured)::
 
-* TODO
+    $ py.test -s -v
+    (...)
+    test_something.py::test_one
+    00:00.001 foo: constructing session thing
+    00:00.001 foo: constructing testcase thing
+    00:00.002 foo: one executes
+    00:00.002 bar: this test does nothing aside from logging
+    PASSED
+    00:00.002 foo: destroying testcase thing
 
-Contributing
-------------
-Contributions are very welcome. Tests can be run with `tox`_, please ensure
-the coverage at least stays the same before you submit a pull request.
+    test_something.py::test_two
+    00:00.000 foo: constructing testcase thing
+    00:00.000 foo: two executes
+    00:00.000 bar: neither does this
+    PASSED
+    00:00.000 foo: destroying testcase thing
+    00:00.001 foo: destroying session thing
+    (...)
 
-License
--------
+and - the same - in filesystem::
 
-Distributed under the terms of the `MIT`_ license, "pytest-logger" is free and open source software
+    $ file mylogs
+    mylogs: symbolic link to `/tmp/pytest-of-aurzenligl/pytest-48/logs'
+
+    $ tree mylogs
+    mylogs
+    `-- test_something.py
+        |-- test_one
+        |   |-- bar
+        |   `-- foo
+        `-- test_two
+            |-- bar
+            `-- foo
+
+Distributed under the terms of the ``MIT`` license, pytest-logger is free and open source software.
