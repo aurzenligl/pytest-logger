@@ -95,8 +95,8 @@ def logdir(request):
     return _make_logdir(request._pyfuncitem)
 
 def _sanitize(filename):
-    filename = filename.replace('::()::', '-')
-    filename = filename.replace('::', '-')
+    filename = filename.replace('::()::', '.')
+    filename = filename.replace('::', '/')
     filename = re.sub(r'\[(.+)\]', r'-\1', filename)
     return filename
 
