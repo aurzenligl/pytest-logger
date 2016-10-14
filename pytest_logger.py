@@ -159,7 +159,8 @@ def _make_stdout_handlers(loggers, fmt):
 def _make_file_handlers(loggers, fmt, logdir):
     def make_handler(logdir, logger_and_level, fmt):
         logger, level = logger_and_level
-        logfile = str(logdir.join(logger.name))
+        name = logger.name == 'root' and 'logs' or logger.name
+        logfile = str(logdir.join(name))
         handler = logging.FileHandler(filename=logfile, mode='w', delay=True)
         handler.setFormatter(fmt)
         handler.setLevel(level)

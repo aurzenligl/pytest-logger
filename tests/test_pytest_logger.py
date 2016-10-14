@@ -125,3 +125,87 @@ def test_stdout_handlers_many_loggers(testdir):
         '.',
         ''
     ])
+
+def test_file_handlers(testdir, LineMatcher):
+    makefile(testdir, ['conftest.py'], """
+        import logging
+        def pytest_logger_fileloggers(item):
+            return [
+                'foo',
+                ('bar', logging.ERROR),
+            ]
+    """)
+    makefile(testdir, ['test_case.py'], """
+        import logging
+        def test_case():
+            for lgr in (logging.getLogger(name) for name in ['foo', 'bar']):
+                lgr.fatal('this is fatal')
+                lgr.warning('this is warning')
+    """)
+
+    result = testdir.runpytest('-s')
+    assert result.ret == 0
+    result.stdout.fnmatch_lines([
+        '',
+        'test_case.py .',
+        '',
+    ])
+
+    basetemp = testdir.tmpdir.join('..', 'basetemp')
+    assert sorted(ls(basetemp.join('logs'))) == sorted(['test_case.py'])
+    assert sorted(ls(basetemp.join('logs', 'test_case.py'))) == sorted(['test_case'])
+    assert sorted(ls(basetemp.join('logs', 'test_case.py', 'test_case'))) == sorted(['bar', 'foo'])
+
+    foologs = LineMatcher(basetemp.join('logs', 'test_case.py', 'test_case', 'foo').read().splitlines())
+    barlogs = LineMatcher(basetemp.join('logs', 'test_case.py', 'test_case', 'bar').read().splitlines())
+
+    foologs.fnmatch_lines([
+        '*:*.* foo: this is fatal',
+        '*:*.* foo: this is warning',
+    ])
+    barlogs.fnmatch_lines([
+        '*:*.* bar: this is fatal',
+    ])
+
+def test_file_handlers_root(testdir, LineMatcher):
+    makefile(testdir, ['conftest.py'], """
+        import logging
+        def pytest_logger_fileloggers(item):
+            return [
+                ('', logging.ERROR),
+                ('foo', logging.WARNING),
+            ]
+    """)
+    makefile(testdir, ['test_case.py'], """
+        import logging
+        def test_case():
+            for lgr in (logging.getLogger(name) for name in ['foo', 'bar', 'baz']):
+                lgr.error('this is error')
+                lgr.warning('this is warning')
+    """)
+
+    result = testdir.runpytest('-s')
+    assert result.ret == 0
+    result.stdout.fnmatch_lines([
+        '',
+        'test_case.py .',
+        '',
+    ])
+
+    basetemp = testdir.tmpdir.join('..', 'basetemp')
+    assert sorted(ls(basetemp.join('logs'))) == sorted(['test_case.py'])
+    assert sorted(ls(basetemp.join('logs', 'test_case.py'))) == sorted(['test_case'])
+    assert sorted(ls(basetemp.join('logs', 'test_case.py', 'test_case'))) == sorted(['logs', 'foo'])
+
+    logslogs = LineMatcher(basetemp.join('logs', 'test_case.py', 'test_case', 'logs').read().splitlines())
+    foologs = LineMatcher(basetemp.join('logs', 'test_case.py', 'test_case', 'foo').read().splitlines())
+
+    logslogs.fnmatch_lines([
+        '*:*.* foo: this is error',
+        '*:*.* bar: this is error',
+        '*:*.* baz: this is error',
+    ])
+    foologs.fnmatch_lines([
+        '*:*.* foo: this is error',
+        '*:*.* foo: this is warning',
+    ])
