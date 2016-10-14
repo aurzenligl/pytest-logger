@@ -42,7 +42,7 @@ def test_logdir_fixture(testdir):
             assert str(logdir).endswith('/logs/subdir/subsubdir/test_foo3.py/test_bar')
     """)
 
-    result = testdir.runpytest('-v')
+    result = testdir.runpytest()
 
     assert result.ret == 0
 
@@ -60,3 +60,68 @@ def test_logdir_fixture(testdir):
     ])
     assert sorted(ls(basetemp.join('logs', 'subdir', 'test_foo2.py'))) == ['test_bar']
     assert sorted(ls(basetemp.join('logs', 'subdir', 'subsubdir', 'test_foo3.py'))) == ['test_bar']
+
+def test_stdout_handlers(testdir):
+    makefile(testdir, ['conftest.py'], """
+        def pytest_logger_stdoutloggers(item):
+            return ['foo']
+    """)
+    makefile(testdir, ['test_case.py'], """
+        import logging
+        def test_case():
+            logging.getLogger('foo').warning('this is warning')
+            logging.getLogger('foo').info('you do not see me: level too low')
+            logging.getLogger('bar').warning('you do not see me: logger not handled')
+    """)
+
+    result = testdir.runpytest()
+    assert result.ret == 0
+    result.stdout.fnmatch_lines([
+        '',
+        'test_case.py .',
+        '',
+    ])
+
+    result = testdir.runpytest('-s')
+    assert result.ret == 0
+    result.stdout.fnmatch_lines([
+        '',
+        'test_case.py ',
+        '*:*.* foo: this is warning',
+        '.',
+        ''
+    ])
+
+def test_stdout_handlers_many_loggers(testdir):
+    makefile(testdir, ['conftest.py'], """
+        import logging
+        def pytest_logger_stdoutloggers(item):
+            return [
+                'foo',
+                ('bar', logging.ERROR),
+                ('baz', logging.FATAL)
+            ]
+    """)
+    makefile(testdir, ['test_case.py'], """
+        import logging
+        def test_case():
+            for lgr in (logging.getLogger(name) for name in ['foo', 'bar', 'baz']):
+                lgr.fatal('this is fatal')
+                lgr.error('this is error')
+                lgr.warning('this is warning')
+    """)
+
+    result = testdir.runpytest('-s')
+    assert result.ret == 0
+    result.stdout.fnmatch_lines([
+        '',
+        'test_case.py ',
+        '*:*.* foo: this is fatal',
+        '*:*.* foo: this is error',
+        '*:*.* foo: this is warning',
+        '*:*.* bar: this is fatal',
+        '*:*.* bar: this is error',
+        '*:*.* baz: this is fatal',
+        '.',
+        ''
+    ])

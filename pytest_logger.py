@@ -5,12 +5,6 @@ import pytest
 import logging
 import time
 import datetime
-from contextlib import contextmanager
-
-def pytest_addoption(parser):
-    group = parser.getgroup("logger", "logging")
-    group.addoption('--logdirflat', default=False, action='store_true',
-                     help='puts all logs in single file.')
 
 def pytest_configure(config):
     config.pluginmanager.register(LoggerPlugin(config), '_logger')
@@ -22,7 +16,6 @@ class LoggerPlugin(object):
     def __init__(self, config):
         self.config = config
         self.logdirlinks = config.hook.pytest_logger_logdirlink(config=config)
-        self.logdirflat = config.getoption('logdirflat')
         self._logsdir = None
 
     def logsdir(self):
@@ -33,8 +26,15 @@ class LoggerPlugin(object):
         return ldir
 
     def pytest_runtest_setup(self, item):
-        def to_loggers(names_list):
-            return [logging.getLogger(name) for names in names_list for name in names]
+        def to_loggers(configs_lists):
+            def to_logger_and_level(cfg):
+                if isinstance(cfg, basestring):
+                    name, level = cfg, logging.NOTSET
+                else:
+                    name, level = cfg
+                logger = logging.getLogger(name)
+                return logger, level
+            return [to_logger_and_level(cfg) for configs in configs_lists for cfg in configs]
 
         stdoutloggers = to_loggers(item.config.hook.pytest_logger_stdoutloggers(item=item))
         fileloggers = to_loggers(item.config.hook.pytest_logger_fileloggers(item=item))
@@ -45,21 +45,24 @@ class LoggerPlugin(object):
         state.on_setup()
 
     def pytest_runtest_teardown(self, item, nextitem):
-        item._logger.on_teardown()
+        logger = getattr(item, '_logger', None)
+        if logger:
+            logger.on_teardown()
 
     def pytest_runtest_makereport(self, item, call):
-        if call.when == 'teardown':
-            item._logger.on_makereport()
+        logger = getattr(item, '_logger', None)
+        if logger:
+            if call.when == 'teardown':
+                logger.on_makereport()
 
 class LoggerState(object):
     def __init__(self, plugin, item, stdoutloggers, fileloggers):
-        self._put_newlines = bool(stdoutloggers)
+        self._put_newlines = bool(item.config.option.capture == 'no' and stdoutloggers)
         self.handlers = _make_handlers(stdoutloggers, fileloggers, item)
 
     def put_newline(self):
         if self._put_newlines:
-            if type(sys.stdout) == file and sys.stdout.name == '<stdout>':
-                sys.stdout.write('\n')
+            sys.stdout.write('\n')
 
     def on_setup(self):
         self.put_newline()
@@ -125,41 +128,42 @@ def _make_logdir(item):
 
 def _enable(handlers):
     for hdlr in handlers:
-        for lgr in hdlr.loggers:
-            lgr.addHandler(hdlr)
+        hdlr.logger.addHandler(hdlr)
 
 def _disable(handlers):
     for hdlr in handlers:
-        for lgr in hdlr.loggers:
-            lgr.removeHandler(hdlr)
+        hdlr.logger.removeHandler(hdlr)
 
 def _make_handlers(stdoutloggers, fileloggers, item):
     FORMAT = '%(asctime)s %(name)s: %(message)s'
     fmt = Formatter(fmt=FORMAT)
     handlers = []
     if stdoutloggers:
-        handlers += [_make_stdout_handler(stdoutloggers, fmt)]
+        handlers += _make_stdout_handlers(stdoutloggers, fmt)
     if fileloggers:
         logdir = _make_logdir(item)
-        logdirflat = item.config.pluginmanager.getplugin('_logger').logdirflat
-        handlers += _make_file_handlers(fileloggers, fmt, logdir, logdirflat)
+        handlers += _make_file_handlers(fileloggers, fmt, logdir)
     return handlers
 
-def _make_stdout_handler(loggers, fmt):
-    handler = logging.StreamHandler(stream=sys.stdout)
-    handler.setFormatter(fmt)
-    handler.loggers = loggers
-    return handler
-
-def _make_file_handlers(loggers, fmt, logdir, logdirflat):
-    def make_handler(logdir, basename, loggers, fmt):
-        logfile = str(logdir.join(basename))
-        handler = logging.FileHandler(filename=logfile, mode='w', delay=True)
+def _make_stdout_handlers(loggers, fmt):
+    def make_handler(logger_and_level, fmt):
+        logger, level = logger_and_level
+        handler = logging.StreamHandler(stream=sys.stdout)
         handler.setFormatter(fmt)
-        handler.loggers = loggers
+        handler.setLevel(level)
+        handler.logger = logger
         return handler
 
-    if logdirflat:
-        return [make_handler(logdir, 'logs', loggers, fmt)]
-    else:
-        return [make_handler(logdir, lgr.name, [lgr], fmt) for lgr in loggers]
+    return [make_handler(lgr, fmt) for lgr in loggers]
+
+def _make_file_handlers(loggers, fmt, logdir):
+    def make_handler(logdir, logger_and_level, fmt):
+        logger, level = logger_and_level
+        logfile = str(logdir.join(logger.name))
+        handler = logging.FileHandler(filename=logfile, mode='w', delay=True)
+        handler.setFormatter(fmt)
+        handler.setLevel(level)
+        handler.logger = logger
+        return handler
+
+    return [make_handler(logdir, lgr, fmt) for lgr in loggers]
