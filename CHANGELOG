@@ -1,0 +1,8 @@
+0.1.1
+-----------------------------------
+- logger hooks accept tuples with names and levels
+- cmdline option 'logdirflat' removed (passing [''] from file hook does just that)
+
+0.1
+-----------------------------------
+- initial version
