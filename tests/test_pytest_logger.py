@@ -7,6 +7,20 @@ def makefile(testdir, path, content):
 def ls(path):
     return [x.basename for x in path.listdir()]
 
+@pytest.fixture(name='FileLineMatcher')
+def FileLineMatcher_fixture(LineMatcher, testdir):
+    class FileLineMatcher(LineMatcher):
+        def __init__(self, dirkind, filepath):
+            if dirkind == 'basetemp':
+                dir = testdir.tmpdir.join('..', 'basetemp')
+            elif dirkind == 'testdir':
+                dir = testdir.tmpdir
+            else:
+                raise Exception('Unknown dirkind: %s' % dirkind)
+            lines = dir.join(filepath).read().splitlines()
+            LineMatcher.__init__(self, lines)
+    return FileLineMatcher
+
 def test_logdir_fixture(testdir):
     makefile(testdir, ['test_foo1.py'], """
         def test_bar(logdir, tmpdir_factory):
@@ -126,7 +140,7 @@ def test_stdout_handlers_many_loggers(testdir):
         ''
     ])
 
-def test_file_handlers(testdir, LineMatcher):
+def test_file_handlers(testdir, FileLineMatcher):
     makefile(testdir, ['conftest.py'], """
         import logging
         def pytest_logger_fileloggers(item):
@@ -156,18 +170,15 @@ def test_file_handlers(testdir, LineMatcher):
     assert sorted(ls(basetemp.join('logs', 'test_case.py'))) == sorted(['test_case'])
     assert sorted(ls(basetemp.join('logs', 'test_case.py', 'test_case'))) == sorted(['bar', 'foo'])
 
-    foologs = LineMatcher(basetemp.join('logs', 'test_case.py', 'test_case', 'foo').read().splitlines())
-    barlogs = LineMatcher(basetemp.join('logs', 'test_case.py', 'test_case', 'bar').read().splitlines())
-
-    foologs.fnmatch_lines([
+    FileLineMatcher('basetemp', 'logs/test_case.py/test_case/foo').fnmatch_lines([
         '*:*.* foo: this is fatal',
         '*:*.* foo: this is warning',
     ])
-    barlogs.fnmatch_lines([
+    FileLineMatcher('basetemp', 'logs/test_case.py/test_case/bar').fnmatch_lines([
         '*:*.* bar: this is fatal',
     ])
 
-def test_file_handlers_root(testdir, LineMatcher):
+def test_file_handlers_root(testdir, FileLineMatcher):
     makefile(testdir, ['conftest.py'], """
         import logging
         def pytest_logger_fileloggers(item):
@@ -197,20 +208,17 @@ def test_file_handlers_root(testdir, LineMatcher):
     assert sorted(ls(basetemp.join('logs', 'test_case.py'))) == sorted(['test_case'])
     assert sorted(ls(basetemp.join('logs', 'test_case.py', 'test_case'))) == sorted(['logs', 'foo'])
 
-    logslogs = LineMatcher(basetemp.join('logs', 'test_case.py', 'test_case', 'logs').read().splitlines())
-    foologs = LineMatcher(basetemp.join('logs', 'test_case.py', 'test_case', 'foo').read().splitlines())
-
-    logslogs.fnmatch_lines([
+    FileLineMatcher('basetemp', 'logs/test_case.py/test_case/logs').fnmatch_lines([
         '*:*.* foo: this is error',
         '*:*.* bar: this is error',
         '*:*.* baz: this is error',
     ])
-    foologs.fnmatch_lines([
+    FileLineMatcher('basetemp', 'logs/test_case.py/test_case/foo').fnmatch_lines([
         '*:*.* foo: this is error',
         '*:*.* foo: this is warning',
     ])
 
-def test_logdir_link(testdir, LineMatcher):
+def test_logdir_link(testdir):
     makefile(testdir, ['conftest.py'], """
         import os
         def pytest_logger_fileloggers(item):
@@ -228,7 +236,7 @@ def test_logdir_link(testdir, LineMatcher):
     assert 'my_link_dir' in ls(testdir.tmpdir)
     assert ['test_case'] == ls(testdir.tmpdir.join('my_link_dir', 'test_case.py'))
 
-def test_multiple_conftests(testdir, LineMatcher):
+def test_multiple_conftests(testdir, FileLineMatcher):
     makefile(testdir, ['conftest.py'], """
         import os
         def pytest_logger_stdoutloggers(item):
@@ -268,10 +276,9 @@ def test_multiple_conftests(testdir, LineMatcher):
         ''
     ])
 
-    basetemp = testdir.tmpdir.join('..', 'basetemp')
-    LineMatcher(basetemp.join('logs', 'subdir', 'test_case.py', 'test_case', 'foo').read().splitlines()).fnmatch_lines([
+    FileLineMatcher('basetemp', 'logs/subdir/test_case.py/test_case/foo').fnmatch_lines([
         '*:*.* foo: this is warning',
     ])
-    LineMatcher(basetemp.join('logs', 'subdir', 'test_case.py', 'test_case', 'bar').read().splitlines()).fnmatch_lines([
+    FileLineMatcher('basetemp', 'logs/subdir/test_case.py/test_case/bar').fnmatch_lines([
         '*:*.* bar: this is warning',
     ])
