@@ -1,25 +1,20 @@
 import pytest
 from _pytest._code import Source
+from _pytest.pytester import LineMatcher
 
 def makefile(testdir, path, content):
     return testdir.tmpdir.ensure(*path).write('\n'.join(Source(content)))
 
-def ls(path):
-    return [x.basename for x in path.listdir()]
+def ls(dir, filepath = ''):
+    return sorted([x.basename for x in dir.join(filepath).listdir()])
 
-@pytest.fixture(name='FileLineMatcher')
-def FileLineMatcher_fixture(LineMatcher, testdir):
-    class FileLineMatcher(LineMatcher):
-        def __init__(self, dirkind, filepath):
-            if dirkind == 'basetemp':
-                dir = testdir.tmpdir.join('..', 'basetemp')
-            elif dirkind == 'testdir':
-                dir = testdir.tmpdir
-            else:
-                raise Exception('Unknown dirkind: %s' % dirkind)
-            lines = dir.join(filepath).read().splitlines()
-            LineMatcher.__init__(self, lines)
-    return FileLineMatcher
+def basetemp(testdir):
+    return testdir.tmpdir.join('..', 'basetemp')
+
+class FileLineMatcher(LineMatcher):
+    def __init__(self, dir, filepath):
+        lines = dir.join(filepath).read().splitlines()
+        LineMatcher.__init__(self, lines)
 
 def test_logdir_fixture(testdir):
     makefile(testdir, ['test_foo1.py'], """
@@ -57,23 +52,20 @@ def test_logdir_fixture(testdir):
     """)
 
     result = testdir.runpytest()
-
     assert result.ret == 0
 
-    basetemp = testdir.tmpdir.join('..', 'basetemp')
-
-    assert sorted(ls(basetemp.join('logs'))) == sorted(['test_foo1.py', 'subdir'])
-    assert sorted(ls(basetemp.join('logs', 'subdir'))) == sorted(['test_foo2.py', 'subsubdir'])
-    assert sorted(ls(basetemp.join('logs', 'subdir', 'subsubdir'))) == sorted(['test_foo3.py'])
-    assert sorted(ls(basetemp.join('logs', 'test_foo1.py'))) == sorted([
+    assert ls(basetemp(testdir), 'logs') == ['subdir', 'test_foo1.py']
+    assert ls(basetemp(testdir), 'logs/subdir') == ['subsubdir', 'test_foo2.py']
+    assert ls(basetemp(testdir), 'logs/subdir/subsubdir') == ['test_foo3.py']
+    assert ls(basetemp(testdir), 'logs/subdir/subsubdir/test_foo3.py') == ['test_bar']
+    assert ls(basetemp(testdir), 'logs/subdir/test_foo2.py') == ['test_bar']
+    assert ls(basetemp(testdir), 'logs/test_foo1.py') == sorted([
         'test_bar',
         'test_baz',
         'TestInsideClass.test_qez',
         'test_par-abc-de',
         'test_par-2-4.127',
     ])
-    assert sorted(ls(basetemp.join('logs', 'subdir', 'test_foo2.py'))) == ['test_bar']
-    assert sorted(ls(basetemp.join('logs', 'subdir', 'subsubdir', 'test_foo3.py'))) == ['test_bar']
 
 def test_stdout_handlers(testdir):
     makefile(testdir, ['conftest.py'], """
@@ -140,7 +132,7 @@ def test_stdout_handlers_many_loggers(testdir):
         ''
     ])
 
-def test_file_handlers(testdir, FileLineMatcher):
+def test_file_handlers(testdir):
     makefile(testdir, ['conftest.py'], """
         import logging
         def pytest_logger_fileloggers(item):
@@ -165,20 +157,19 @@ def test_file_handlers(testdir, FileLineMatcher):
         '',
     ])
 
-    basetemp = testdir.tmpdir.join('..', 'basetemp')
-    assert sorted(ls(basetemp.join('logs'))) == sorted(['test_case.py'])
-    assert sorted(ls(basetemp.join('logs', 'test_case.py'))) == sorted(['test_case'])
-    assert sorted(ls(basetemp.join('logs', 'test_case.py', 'test_case'))) == sorted(['bar', 'foo'])
+    assert ls(basetemp(testdir), 'logs') == ['test_case.py']
+    assert ls(basetemp(testdir), 'logs/test_case.py') == ['test_case']
+    assert ls(basetemp(testdir), 'logs/test_case.py/test_case') == ['bar', 'foo']
 
-    FileLineMatcher('basetemp', 'logs/test_case.py/test_case/foo').fnmatch_lines([
+    FileLineMatcher(basetemp(testdir), 'logs/test_case.py/test_case/foo').fnmatch_lines([
         '*:*.* foo: this is fatal',
         '*:*.* foo: this is warning',
     ])
-    FileLineMatcher('basetemp', 'logs/test_case.py/test_case/bar').fnmatch_lines([
+    FileLineMatcher(basetemp(testdir), 'logs/test_case.py/test_case/bar').fnmatch_lines([
         '*:*.* bar: this is fatal',
     ])
 
-def test_file_handlers_root(testdir, FileLineMatcher):
+def test_file_handlers_root(testdir):
     makefile(testdir, ['conftest.py'], """
         import logging
         def pytest_logger_fileloggers(item):
@@ -197,23 +188,23 @@ def test_file_handlers_root(testdir, FileLineMatcher):
 
     result = testdir.runpytest('-s')
     assert result.ret == 0
+
     result.stdout.fnmatch_lines([
         '',
         'test_case.py .',
         '',
     ])
 
-    basetemp = testdir.tmpdir.join('..', 'basetemp')
-    assert sorted(ls(basetemp.join('logs'))) == sorted(['test_case.py'])
-    assert sorted(ls(basetemp.join('logs', 'test_case.py'))) == sorted(['test_case'])
-    assert sorted(ls(basetemp.join('logs', 'test_case.py', 'test_case'))) == sorted(['logs', 'foo'])
+    assert ls(basetemp(testdir), 'logs') == ['test_case.py']
+    assert ls(basetemp(testdir), 'logs/test_case.py') == ['test_case']
+    assert ls(basetemp(testdir), 'logs/test_case.py/test_case') == ['foo', 'logs']
 
-    FileLineMatcher('basetemp', 'logs/test_case.py/test_case/logs').fnmatch_lines([
+    FileLineMatcher(basetemp(testdir), 'logs/test_case.py/test_case/logs').fnmatch_lines([
         '*:*.* foo: this is error',
         '*:*.* bar: this is error',
         '*:*.* baz: this is error',
     ])
-    FileLineMatcher('basetemp', 'logs/test_case.py/test_case/foo').fnmatch_lines([
+    FileLineMatcher(basetemp(testdir), 'logs/test_case.py/test_case/foo').fnmatch_lines([
         '*:*.* foo: this is error',
         '*:*.* foo: this is warning',
     ])
@@ -234,9 +225,9 @@ def test_logdir_link(testdir):
     result = testdir.runpytest('-s')
     assert result.ret == 0
     assert 'my_link_dir' in ls(testdir.tmpdir)
-    assert ['test_case'] == ls(testdir.tmpdir.join('my_link_dir', 'test_case.py'))
+    assert ['test_case'] == ls(testdir.tmpdir, 'my_link_dir/test_case.py')
 
-def test_multiple_conftests(testdir, FileLineMatcher):
+def test_multiple_conftests(testdir):
     makefile(testdir, ['conftest.py'], """
         import os
         def pytest_logger_stdoutloggers(item):
@@ -264,8 +255,9 @@ def test_multiple_conftests(testdir, FileLineMatcher):
 
     result = testdir.runpytest('subdir', '-s')
     assert result.ret == 0
-    assert ['test_case'] == ls(testdir.tmpdir.join('logs', 'subdir', 'test_case.py'))
-    assert ['test_case'] == ls(testdir.tmpdir.join('subdir', 'logs', 'subdir', 'test_case.py'))
+
+    assert ls(testdir.tmpdir, 'logs/subdir/test_case.py') == ['test_case']
+    assert ls(testdir.tmpdir, 'subdir/logs/subdir/test_case.py') == ['test_case']
 
     result.stdout.fnmatch_lines([
         '',
@@ -276,9 +268,9 @@ def test_multiple_conftests(testdir, FileLineMatcher):
         ''
     ])
 
-    FileLineMatcher('basetemp', 'logs/subdir/test_case.py/test_case/foo').fnmatch_lines([
+    FileLineMatcher(basetemp(testdir), 'logs/subdir/test_case.py/test_case/foo').fnmatch_lines([
         '*:*.* foo: this is warning',
     ])
-    FileLineMatcher('basetemp', 'logs/subdir/test_case.py/test_case/bar').fnmatch_lines([
+    FileLineMatcher(basetemp(testdir), 'logs/subdir/test_case.py/test_case/bar').fnmatch_lines([
         '*:*.* bar: this is warning',
     ])
