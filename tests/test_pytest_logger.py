@@ -274,3 +274,25 @@ def test_multiple_conftests(testdir):
     FileLineMatcher(basetemp(testdir), 'logs/subdir/test_case.py/test_case/bar').fnmatch_lines([
         '*:*.* bar: this is warning',
     ])
+
+def test_skip_gracefully(testdir):
+    makefile(testdir, ['conftest.py'], """
+        import os
+        def pytest_logger_stdoutloggers(item):
+            return ['foo']
+        def pytest_logger_fileloggers(item):
+            return ['foo']
+        def pytest_logger_logdirlink(config):
+            return os.path.join(os.path.dirname(__file__), 'logs')
+    """)
+    makefile(testdir, ['test_case.py'], """
+        import pytest
+        @pytest.mark.skipif(True, reason='')
+        def test_case():
+            pass
+    """)
+
+    result = testdir.runpytest('-s')
+    assert result.ret == 0
+
+    assert 'logs' not in ls(testdir.tmpdir)
