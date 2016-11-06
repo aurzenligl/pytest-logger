@@ -209,3 +209,69 @@ def test_file_handlers_root(testdir, LineMatcher):
         '*:*.* foo: this is error',
         '*:*.* foo: this is warning',
     ])
+
+def test_logdir_link(testdir, LineMatcher):
+    makefile(testdir, ['conftest.py'], """
+        import os
+        def pytest_logger_fileloggers(item):
+            return ['']
+        def pytest_logger_logdirlink(config):
+            return os.path.join(os.path.dirname(__file__), 'my_link_dir')
+    """)
+    makefile(testdir, ['test_case.py'], """
+        def test_case():
+            pass
+    """)
+
+    result = testdir.runpytest('-s')
+    assert result.ret == 0
+    assert 'my_link_dir' in ls(testdir.tmpdir)
+    assert ['test_case'] == ls(testdir.tmpdir.join('my_link_dir', 'test_case.py'))
+
+def test_multiple_conftests(testdir, LineMatcher):
+    makefile(testdir, ['conftest.py'], """
+        import os
+        def pytest_logger_stdoutloggers(item):
+            return ['foo']
+        def pytest_logger_fileloggers(item):
+            return ['foo']
+        def pytest_logger_logdirlink(config):
+            return os.path.join(os.path.dirname(__file__), 'logs')
+    """)
+    makefile(testdir, ['subdir', 'conftest.py'], """
+        import os
+        def pytest_logger_stdoutloggers(item):
+            return ['bar']
+        def pytest_logger_fileloggers(item):
+            return ['bar']
+        def pytest_logger_logdirlink(config):
+            return os.path.join(os.path.dirname(__file__), 'logs')
+    """)
+    makefile(testdir, ['subdir', 'test_case.py'], """
+        import logging
+        def test_case():
+            for lgr in (logging.getLogger(name) for name in ['foo', 'bar']):
+                lgr.warning('this is warning')
+    """)
+
+    result = testdir.runpytest('subdir', '-s')
+    assert result.ret == 0
+    assert ['test_case'] == ls(testdir.tmpdir.join('logs', 'subdir', 'test_case.py'))
+    assert ['test_case'] == ls(testdir.tmpdir.join('subdir', 'logs', 'subdir', 'test_case.py'))
+
+    result.stdout.fnmatch_lines([
+        '',
+        'subdir/test_case.py ',
+        '*:*.* foo: this is warning',
+        '*:*.* bar: this is warning',
+        '.',
+        ''
+    ])
+
+    basetemp = testdir.tmpdir.join('..', 'basetemp')
+    LineMatcher(basetemp.join('logs', 'subdir', 'test_case.py', 'test_case', 'foo').read().splitlines()).fnmatch_lines([
+        '*:*.* foo: this is warning',
+    ])
+    LineMatcher(basetemp.join('logs', 'subdir', 'test_case.py', 'test_case', 'bar').read().splitlines()).fnmatch_lines([
+        '*:*.* bar: this is warning',
+    ])
