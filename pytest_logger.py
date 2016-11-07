@@ -85,6 +85,13 @@ class LoggerHookspec(object):
         """ called after cmdline options parsing, returns location of link to logs dir """
 
 class Formatter(logging.Formatter):
+    short_level_names = {
+        logging.FATAL: 'ftl',
+        logging.ERROR: 'err',
+        logging.WARN: 'wrn',
+        logging.INFO: 'inf',
+        logging.DEBUG: 'dbg',
+    }
     def __init__(self, *args, **kwargs):
         super(Formatter, self).__init__(*args, **kwargs)
         self._start = time.time()
@@ -92,6 +99,10 @@ class Formatter(logging.Formatter):
         ct = record.created - self._start
         dt = datetime.datetime.utcfromtimestamp(ct)
         return dt.strftime("%M:%S.%f")[:-3]  # omit useconds, leave mseconds
+    def format(self, record):
+        record.levelshortname = Formatter.short_level_names.get(record.levelno,
+                                                                'l%s' % record.levelno)
+        return super(Formatter, self).format(record)
 
 @pytest.fixture
 def logdir(request):
@@ -135,7 +146,7 @@ def _disable(handlers):
         hdlr.logger.removeHandler(hdlr)
 
 def _make_handlers(stdoutloggers, fileloggers, item):
-    FORMAT = '%(asctime)s %(name)s: %(message)s'
+    FORMAT = '%(asctime)s %(levelshortname)s %(name)s: %(message)s'
     fmt = Formatter(fmt=FORMAT)
     handlers = []
     if stdoutloggers:

@@ -93,7 +93,7 @@ def test_stdout_handlers(testdir):
     result.stdout.fnmatch_lines([
         '',
         'test_case.py ',
-        '*:*.* foo: this is warning',
+        '* foo: this is warning',
         '.',
         ''
     ])
@@ -122,12 +122,12 @@ def test_stdout_handlers_many_loggers(testdir):
     result.stdout.fnmatch_lines([
         '',
         'test_case.py ',
-        '*:*.* foo: this is fatal',
-        '*:*.* foo: this is error',
-        '*:*.* foo: this is warning',
-        '*:*.* bar: this is fatal',
-        '*:*.* bar: this is error',
-        '*:*.* baz: this is fatal',
+        '* foo: this is fatal',
+        '* foo: this is error',
+        '* foo: this is warning',
+        '* bar: this is fatal',
+        '* bar: this is error',
+        '* baz: this is fatal',
         '.',
         ''
     ])
@@ -162,11 +162,11 @@ def test_file_handlers(testdir):
     assert ls(basetemp(testdir), 'logs/test_case.py/test_case') == ['bar', 'foo']
 
     FileLineMatcher(basetemp(testdir), 'logs/test_case.py/test_case/foo').fnmatch_lines([
-        '*:*.* foo: this is fatal',
-        '*:*.* foo: this is warning',
+        '* foo: this is fatal',
+        '* foo: this is warning',
     ])
     FileLineMatcher(basetemp(testdir), 'logs/test_case.py/test_case/bar').fnmatch_lines([
-        '*:*.* bar: this is fatal',
+        '* bar: this is fatal',
     ])
 
 def test_file_handlers_root(testdir):
@@ -200,13 +200,13 @@ def test_file_handlers_root(testdir):
     assert ls(basetemp(testdir), 'logs/test_case.py/test_case') == ['foo', 'logs']
 
     FileLineMatcher(basetemp(testdir), 'logs/test_case.py/test_case/logs').fnmatch_lines([
-        '*:*.* foo: this is error',
-        '*:*.* bar: this is error',
-        '*:*.* baz: this is error',
+        '* foo: this is error',
+        '* bar: this is error',
+        '* baz: this is error',
     ])
     FileLineMatcher(basetemp(testdir), 'logs/test_case.py/test_case/foo').fnmatch_lines([
-        '*:*.* foo: this is error',
-        '*:*.* foo: this is warning',
+        '* foo: this is error',
+        '* foo: this is warning',
     ])
 
 def test_logdir_link(testdir):
@@ -226,6 +226,42 @@ def test_logdir_link(testdir):
     assert result.ret == 0
     assert 'my_link_dir' in ls(testdir.tmpdir)
     assert ['test_case'] == ls(testdir.tmpdir, 'my_link_dir/test_case.py')
+
+def test_format(testdir):
+    makefile(testdir, ['conftest.py'], """
+        import os
+        import logging
+        def pytest_logger_stdoutloggers(item):
+            return ['']
+        def pytest_logger_fileloggers(item):
+            return ['']
+    """)
+    makefile(testdir, ['test_case.py'], """
+        import logging
+        def test_case():
+            lgr = logging.getLogger('foo')
+            lgr.setLevel(logging.DEBUG)
+            lgr.fatal('this is fatal')
+            lgr.error('this is error')
+            lgr.warning('this is warning')
+            lgr.info('this is info')
+            lgr.debug('this is debug')
+            lgr.log(35, 'this is 35')
+    """)
+
+    result = testdir.runpytest('-s')
+    assert result.ret == 0
+
+    expected_lines = [
+        '*:*.* ftl foo: this is fatal',
+        '*:*.* err foo: this is error',
+        '*:*.* wrn foo: this is warning',
+        '*:*.* inf foo: this is info',
+        '*:*.* dbg foo: this is debug',
+        '*:*.* l35 foo: this is 35',
+    ]
+    result.stdout.fnmatch_lines(expected_lines)
+    FileLineMatcher(basetemp(testdir), 'logs/test_case.py/test_case/logs').fnmatch_lines(expected_lines)
 
 def test_multiple_conftests(testdir):
     makefile(testdir, ['conftest.py'], """
@@ -262,17 +298,17 @@ def test_multiple_conftests(testdir):
     result.stdout.fnmatch_lines([
         '',
         'subdir/test_case.py ',
-        '*:*.* foo: this is warning',
-        '*:*.* bar: this is warning',
+        '* foo: this is warning',
+        '* bar: this is warning',
         '.',
         ''
     ])
 
     FileLineMatcher(basetemp(testdir), 'logs/subdir/test_case.py/test_case/foo').fnmatch_lines([
-        '*:*.* foo: this is warning',
+        '* foo: this is warning',
     ])
     FileLineMatcher(basetemp(testdir), 'logs/subdir/test_case.py/test_case/bar').fnmatch_lines([
-        '*:*.* bar: this is warning',
+        '* bar: this is warning',
     ])
 
 def test_skip_gracefully(testdir):
