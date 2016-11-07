@@ -1,3 +1,7 @@
+0.1.2
+-----------------------------------
+- log format has short level name
+
 0.1.1
 -----------------------------------
 - logger hooks accept tuples with names and levels
