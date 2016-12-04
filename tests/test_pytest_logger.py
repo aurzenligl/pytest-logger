@@ -332,3 +332,31 @@ def test_skip_gracefully(testdir):
     assert result.ret == 0
 
     assert 'logs' not in ls(testdir.tmpdir)
+
+def test_xdist(testdir):
+    N = 8
+    makefile(testdir, ['conftest.py'], """
+        import os
+        def pytest_logger_stdoutloggers(item):
+            return ['foo']
+        def pytest_logger_fileloggers(item):
+            return ['foo']
+        def pytest_logger_logdirlink(config):
+            return os.path.join(os.path.dirname(__file__), 'logs')
+    """)
+    for index in range(N):
+        makefile(testdir, ['test_case%s.py' % index], """
+            import logging
+            def test_case{0}():
+                logging.getLogger('foo').warning('this is test {0}')
+                fail
+        """.format(index))
+
+    result = testdir.runpytest('-n3')
+    assert result.ret == 1
+
+    assert ls(testdir.tmpdir, 'logs') == ['test_case%s.py' % i for i in range(N)]
+    result.stdout.fnmatch_lines_random(['* wrn foo: this is test %s' % i for i in range(N)])
+    for index in range(N):
+        logfilename = 'logs/test_case{0}.py/test_case{0}/foo'.format(index)
+        FileLineMatcher(basetemp(testdir), logfilename).fnmatch_lines(['* wrn foo: this is test %s' % index])
