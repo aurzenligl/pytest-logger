@@ -6,6 +6,13 @@ import logging
 import time
 import datetime
 
+PY2 = sys.version_info[0] == 2
+
+if PY2:
+    string_type = basestring
+else:
+    string_type = str
+
 def pytest_configure(config):
     config.pluginmanager.register(LoggerPlugin(config), '_logger')
 
@@ -28,7 +35,7 @@ class LoggerPlugin(object):
     def pytest_runtest_setup(self, item):
         def to_loggers(configs_lists):
             def to_logger_and_level(cfg):
-                if isinstance(cfg, basestring):
+                if isinstance(cfg, string_type):
                     name, level = cfg, logging.NOTSET
                 else:
                     name, level = cfg

@@ -19,7 +19,7 @@ class FileLineMatcher(LineMatcher):
 def test_logdir_fixture(testdir):
     makefile(testdir, ['test_foo1.py'], """
         def test_bar(logdir, tmpdir_factory):
-            print tmpdir_factory
+            print(tmpdir_factory)
             assert str(logdir).endswith('/logs/test_foo1.py/test_bar')
 
         def test_baz(logdir):
