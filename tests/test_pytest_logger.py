@@ -299,8 +299,9 @@ def test_multiple_conftests(testdir):
             for lgr in (logging.getLogger(name) for name in ['foo', 'bar']):
                 lgr.warning('this is warning')
     """)
+    makefile(testdir, ['makes_nodeid_in_pytest29_contain_subdir_name', 'empty'], '')
 
-    result = testdir.runpytest('subdir', '-s')
+    result = testdir.runpytest('subdir', 'makes_nodeid_in_pytest29_contain_subdir_name', '-s')
     assert result.ret == 0
 
     assert ls(testdir.tmpdir, 'logs/subdir/test_case.py') == ['test_case']
