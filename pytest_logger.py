@@ -13,11 +13,14 @@ if PY2:
 else:
     string_type = str
 
+
 def pytest_configure(config):
     config.pluginmanager.register(LoggerPlugin(config), '_logger')
 
+
 def pytest_addhooks(pluginmanager):
     pluginmanager.add_hookspecs(LoggerHookspec)
+
 
 class LoggerPlugin(object):
     def __init__(self, config):
@@ -62,6 +65,7 @@ class LoggerPlugin(object):
             if call.when == 'teardown':
                 logger.on_makereport()
 
+
 class LoggerState(object):
     def __init__(self, plugin, item, stdoutloggers, fileloggers):
         self._put_newlines = bool(item.config.option.capture == 'no' and stdoutloggers)
@@ -81,6 +85,7 @@ class LoggerState(object):
     def on_makereport(self):
         _disable(self.handlers)
 
+
 class LoggerHookspec(object):
     def pytest_logger_stdoutloggers(self, item):
         """ called before testcase setup, returns list of logger names """
@@ -91,6 +96,7 @@ class LoggerHookspec(object):
     def pytest_logger_logdirlink(self, config):
         """ called after cmdline options parsing, returns location of link to logs dir """
 
+
 class Formatter(logging.Formatter):
     short_level_names = {
         logging.FATAL: 'ftl',
@@ -99,27 +105,33 @@ class Formatter(logging.Formatter):
         logging.INFO: 'inf',
         logging.DEBUG: 'dbg',
     }
+
     def __init__(self, *args, **kwargs):
         super(Formatter, self).__init__(*args, **kwargs)
         self._start = time.time()
+
     def formatTime(self, record, datefmt=None):
         ct = record.created - self._start
         dt = datetime.datetime.utcfromtimestamp(ct)
         return dt.strftime("%M:%S.%f")[:-3]  # omit useconds, leave mseconds
+
     def format(self, record):
         record.levelshortname = Formatter.short_level_names.get(record.levelno,
                                                                 'l%s' % record.levelno)
         return super(Formatter, self).format(record)
 
+
 @pytest.fixture
 def logdir(request):
     return _make_logdir(request._pyfuncitem)
+
 
 def _sanitize(filename):
     filename = filename.replace('::()::', '.')
     filename = filename.replace('::', '/')
     filename = re.sub(r'\[(.+)\]', r'-\1', filename)
     return filename
+
 
 def _refresh_link(source, link_name):
     try:
@@ -131,6 +143,7 @@ def _refresh_link(source, link_name):
     except (OSError, AttributeError, NotImplementedError):
         pass
 
+
 def _make_logsdir(tmpdirhandler, logdirlinks):
     logsdir = tmpdirhandler.getbasetemp()
     if logsdir.basename.startswith('popen-gw'):
@@ -140,17 +153,21 @@ def _make_logsdir(tmpdirhandler, logdirlinks):
         _refresh_link(str(logsdir), link)
     return logsdir
 
+
 def _make_logdir(item):
     plugin = item.config.pluginmanager.getplugin('_logger')
     return plugin.logsdir().join(_sanitize(item.nodeid)).ensure(dir=1)
+
 
 def _enable(handlers):
     for hdlr in handlers:
         hdlr.logger.addHandler(hdlr)
 
+
 def _disable(handlers):
     for hdlr in handlers:
         hdlr.logger.removeHandler(hdlr)
+
 
 def _make_handlers(stdoutloggers, fileloggers, item):
     FORMAT = '%(asctime)s %(levelshortname)s %(name)s: %(message)s'
@@ -163,6 +180,7 @@ def _make_handlers(stdoutloggers, fileloggers, item):
         handlers += _make_file_handlers(fileloggers, fmt, logdir)
     return handlers
 
+
 def _make_stdout_handlers(loggers, fmt):
     def make_handler(logger_and_level, fmt):
         logger, level = logger_and_level
@@ -173,6 +191,7 @@ def _make_stdout_handlers(loggers, fmt):
         return handler
 
     return [make_handler(lgr, fmt) for lgr in loggers]
+
 
 def _make_file_handlers(loggers, fmt, logdir):
     def make_handler(logdir, logger_and_level, fmt):

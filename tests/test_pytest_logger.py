@@ -1,20 +1,24 @@
-import pytest
 from _pytest._code import Source
 from _pytest.pytester import LineMatcher
+
 
 def makefile(testdir, path, content):
     return testdir.tmpdir.ensure(*path).write('\n'.join(Source(content)))
 
-def ls(dir, filepath = ''):
+
+def ls(dir, filepath=''):
     return sorted([x.basename for x in dir.join(filepath).listdir()])
+
 
 def basetemp(testdir):
     return testdir.tmpdir.join('..', 'basetemp')
+
 
 class FileLineMatcher(LineMatcher):
     def __init__(self, dir, filepath):
         lines = dir.join(filepath).read().splitlines()
         LineMatcher.__init__(self, lines)
+
 
 def test_logdir_fixture(testdir):
     makefile(testdir, ['test_foo1.py'], """
@@ -67,6 +71,7 @@ def test_logdir_fixture(testdir):
         'test_par-2-4.127',
     ])
 
+
 def test_stdout_handlers(testdir):
     makefile(testdir, ['conftest.py'], """
         def pytest_logger_stdoutloggers(item):
@@ -97,6 +102,7 @@ def test_stdout_handlers(testdir):
         '.',
         ''
     ])
+
 
 def test_stdout_handlers_many_loggers(testdir):
     makefile(testdir, ['conftest.py'], """
@@ -131,6 +137,7 @@ def test_stdout_handlers_many_loggers(testdir):
         '.',
         ''
     ])
+
 
 def test_file_handlers(testdir):
     makefile(testdir, ['conftest.py'], """
@@ -168,6 +175,7 @@ def test_file_handlers(testdir):
     FileLineMatcher(basetemp(testdir), 'logs/test_case.py/test_case/bar').fnmatch_lines([
         '* bar: this is fatal',
     ])
+
 
 def test_file_handlers_root(testdir):
     makefile(testdir, ['conftest.py'], """
@@ -209,6 +217,7 @@ def test_file_handlers_root(testdir):
         '* foo: this is warning',
     ])
 
+
 def test_logdir_link(testdir):
     makefile(testdir, ['conftest.py'], """
         import os
@@ -226,6 +235,7 @@ def test_logdir_link(testdir):
     assert result.ret == 0
     assert 'my_link_dir' in ls(testdir.tmpdir)
     assert ['test_case'] == ls(testdir.tmpdir, 'my_link_dir/test_case.py')
+
 
 def test_format(testdir):
     makefile(testdir, ['conftest.py'], """
@@ -262,6 +272,7 @@ def test_format(testdir):
     ]
     result.stdout.fnmatch_lines(expected_lines)
     FileLineMatcher(basetemp(testdir), 'logs/test_case.py/test_case/logs').fnmatch_lines(expected_lines)
+
 
 def test_multiple_conftests(testdir):
     makefile(testdir, ['conftest.py'], """
@@ -311,6 +322,7 @@ def test_multiple_conftests(testdir):
         '* bar: this is warning',
     ])
 
+
 def test_skip_gracefully(testdir):
     makefile(testdir, ['conftest.py'], """
         import os
@@ -332,6 +344,7 @@ def test_skip_gracefully(testdir):
     assert result.ret == 0
 
     assert 'logs' not in ls(testdir.tmpdir)
+
 
 def test_xdist(testdir):
     N = 8
