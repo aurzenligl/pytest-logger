@@ -1,19 +1,34 @@
-# Config file for automatic testing at travis-ci.org
-
-sudo: false
 language: python
-python:
-  - "2.7"
-  - "3.3"
-  - "3.4"
-  - "3.5"
-  - "pypy"
-
+env:
+  matrix:
+    - TOXENV=check
+    - TOXENV=py27-pytest27
+    - TOXENV=py27-pytest28
+    - TOXENV=py27-pytest29
+    - TOXENV=py27-pytest30
+    - TOXENV=py34-pytest27
+    - TOXENV=py34-pytest28
+    - TOXENV=py34-pytest29
+    - TOXENV=py34-pytest30
+    - TOXENV=py35-pytest27
+    - TOXENV=py35-pytest28
+    - TOXENV=py35-pytest29
+    - TOXENV=py35-pytest30
+    - TOXENV=pypy-pytest27
+    - TOXENV=pypy-pytest28
+    - TOXENV=pypy-pytest29
+    - TOXENV=pypy-pytest30
+before_install:
+  - python --version
+  - uname -a
+  - lsb_release -a
 install:
   - pip install tox
-  - "TOX_ENV=${TRAVIS_PYTHON_VERSION/[0-9].[0-9]/py${TRAVIS_PYTHON_VERSION/.}}"
-script: tox -e $TOX_ENV
-
+  - virtualenv --version
+  - pip --version
+  - tox --version
+script:
+  - tox -v
 before_cache:
   - rm -rf $HOME/.cache/pip/log
 cache:
