@@ -1,3 +1,18 @@
+.. list-table::
+
+    * - Version
+      - |version|
+    * - Travis
+      - |travis|
+
+.. |version| image:: https://img.shields.io/pypi/v/pytest-logger.svg?style=flat
+    :target: https://pypi.python.org/pypi/pytest-logger
+    :alt: Pypi Package Version
+
+.. |travis| image:: https://travis-ci.org/aurzenligl/pytest-logger.svg?branch=master
+    :target: https://travis-ci.org/aurzenligl/pytest-logger
+    :alt: Travis-CI Build Status
+
 Pytest-logger is a pytest plugin configuring handlers for loggers from Python logging module.
 
 You can install pytest-logger via ``pip`` from ``PyPI``::
@@ -5,8 +20,9 @@ You can install pytest-logger via ``pip`` from ``PyPI``::
     $ [sudo] pip install pytest-logger
 
 Plugin puts logs on per-logger basis to:
-  - standard output,
-  - files within log-specific directory under pytest's ``tmpdir_factory`` session directory.
+
+- standard output,
+- files within log-specific directory under pytest's ``tmpdir_factory`` session directory.
 
 You can setup plugin using hooks::
 
