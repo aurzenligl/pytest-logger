@@ -22,7 +22,7 @@ setup(
     url='https://github.com/aurzenligl/pytest-logger',
     description='Plugin configuring handlers for loggers from Python logging module.',
     long_description=read('README.rst'),
-    py_modules=['pytest_logger'],
+    packages=['pytest_logger'],
     install_requires=['pytest>=2.9.2'],
     classifiers=[
         'Development Status :: 4 - Beta',
@@ -43,7 +43,7 @@ setup(
     ],
     entry_points={
         'pytest11': [
-            'logger = pytest_logger',
+            'logger = pytest_logger.plugin',
         ],
     },
 )
