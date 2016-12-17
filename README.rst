@@ -1,17 +1,15 @@
-.. list-table::
-
-    * - Version
-      - |version|
-    * - Travis
-      - |travis|
-
-.. |version| image:: https://img.shields.io/pypi/v/pytest-logger.svg?style=flat
+.. image:: https://img.shields.io/pypi/v/pytest-logger.svg
     :target: https://pypi.python.org/pypi/pytest-logger
     :alt: Pypi Package Version
-
-.. |travis| image:: https://travis-ci.org/aurzenligl/pytest-logger.svg?branch=master
+.. image:: https://img.shields.io/pypi/pyversions/pytest-logger.svg
+    :target: https://pypi.python.org/pypi/pytest-logger
+    :alt: Supported Python Versions
+.. image:: https://travis-ci.org/aurzenligl/pytest-logger.svg?branch=master
     :target: https://travis-ci.org/aurzenligl/pytest-logger
     :alt: Travis-CI Build Status
+.. image:: https://ci.appveyor.com/api/projects/status/1h4cy8tk220pn03o?svg=true
+    :target: https://ci.appveyor.com/project/aurzenligl/pytest-logger
+    :alt: AppVeyor-CI Build Status
 
 Pytest-logger is a pytest plugin configuring handlers for loggers from Python logging module.
 
