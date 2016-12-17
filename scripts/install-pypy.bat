@@ -1,5 +1,5 @@
-# script copied from pytest repository:
-# https://github.com/pytest-dev/pytest/blob/master/scripts/install-pypy.bat
+REM script copied from pytest repository:
+REM https://github.com/pytest-dev/pytest/blob/master/scripts/install-pypy.bat
 
 REM install pypy using choco
 REM redirect to a file because choco install python.pypy is too noisy. If the command fails, write output to console
