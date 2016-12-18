@@ -1,8 +1,11 @@
 import os
+import sys
+import pytest
 from _pytest._code import Source
 from _pytest.pytester import LineMatcher
 
 opj = os.path.join
+win32py2 = sys.platform == 'win32' and sys.version_info[0] == 2
 
 
 def makefile(testdir, path, content):
@@ -230,6 +233,7 @@ def test_file_handlers_root(testdir):
     ])
 
 
+@pytest.mark.skipif(win32py2, reason="python 2 on windows doesn't have symlink feature")
 def test_logdir_link(testdir):
     makefile(testdir, ['conftest.py'], """
         import os
@@ -316,8 +320,9 @@ def test_multiple_conftests(testdir):
     result = testdir.runpytest('subdir', 'makes_nodeid_in_pytest29_contain_subdir_name', '-s')
     assert result.ret == 0
 
-    assert ls(testdir.tmpdir, 'logs/subdir/test_case.py') == ['test_case']
-    assert ls(testdir.tmpdir, 'subdir/logs/subdir/test_case.py') == ['test_case']
+    if not win32py2:
+        assert ls(testdir.tmpdir, 'logs/subdir/test_case.py') == ['test_case']
+        assert ls(testdir.tmpdir, 'subdir/logs/subdir/test_case.py') == ['test_case']
 
     result.stdout.fnmatch_lines([
         '',
