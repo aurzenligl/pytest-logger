@@ -4,7 +4,6 @@ import pytest
 from _pytest._code import Source
 from _pytest.pytester import LineMatcher
 
-opj = os.path.join
 win32py2 = sys.platform == 'win32' and sys.version_info[0] == 2
 
 
@@ -29,18 +28,17 @@ class FileLineMatcher(LineMatcher):
 def test_logdir_fixture(testdir):
     makefile(testdir, ['test_foo1.py'], """
         import os
-        opj = os.path.join
 
         def test_bar(logdir, tmpdir_factory):
             print(tmpdir_factory)
-            assert str(logdir).endswith(opj('logs', 'test_foo1.py', 'test_bar'))
+            assert str(logdir).endswith(os.path.join('logs', 'test_foo1.py', 'test_bar'))
 
         def test_baz(logdir):
-            assert str(logdir).endswith(opj('logs', 'test_foo1.py', 'test_baz'))
+            assert str(logdir).endswith(os.path.join('logs', 'test_foo1.py', 'test_baz'))
 
         class TestInsideClass(object):
             def test_qez(self, logdir):
-                assert str(logdir).endswith(opj('logs', 'test_foo1.py', 'TestInsideClass.test_qez'))
+                assert str(logdir).endswith(os.path.join('logs', 'test_foo1.py', 'TestInsideClass.test_qez'))
 
         import pytest
         @pytest.mark.parametrize('param1,param2', [
@@ -49,36 +47,32 @@ def test_logdir_fixture(testdir):
         ])
         def test_par(logdir, param1, param2):
             assert any((
-                str(logdir).endswith(opj('logs', 'test_foo1.py', 'test_par-abc-de')),
-                str(logdir).endswith(opj('logs', 'test_foo1.py', 'test_par-2-4.127')),
+                str(logdir).endswith(os.path.join('logs', 'test_foo1.py', 'test_par-abc-de')),
+                str(logdir).endswith(os.path.join('logs', 'test_foo1.py', 'test_par-2-4.127')),
             ))
         def test_this_should_not_generate_logdir():
             pass
     """)
     makefile(testdir, ['subdir', 'test_foo2.py'], """
         import os
-        opj = os.path.join
-
         def test_bar(logdir):
-            assert str(logdir).endswith(opj('logs', 'subdir', 'test_foo2.py', 'test_bar'))
+            assert str(logdir).endswith(os.path.join('logs', 'subdir', 'test_foo2.py', 'test_bar'))
     """)
     makefile(testdir, ['subdir', 'subsubdir', 'test_foo3.py'], """
         import os
-        opj = os.path.join
-
         def test_bar(logdir):
-            assert str(logdir).endswith(opj('logs', 'subdir', 'subsubdir', 'test_foo3.py', 'test_bar'))
+            assert str(logdir).endswith(os.path.join('logs', 'subdir', 'subsubdir', 'test_foo3.py', 'test_bar'))
     """)
 
     result = testdir.runpytest()
     assert result.ret == 0
 
-    assert ls(basetemp(testdir), opj('logs')) == ['subdir', 'test_foo1.py']
-    assert ls(basetemp(testdir), opj('logs', 'subdir')) == ['subsubdir', 'test_foo2.py']
-    assert ls(basetemp(testdir), opj('logs', 'subdir', 'subsubdir')) == ['test_foo3.py']
-    assert ls(basetemp(testdir), opj('logs', 'subdir', 'subsubdir', 'test_foo3.py')) == ['test_bar']
-    assert ls(basetemp(testdir), opj('logs', 'subdir', 'test_foo2.py')) == ['test_bar']
-    assert ls(basetemp(testdir), opj('logs', 'test_foo1.py')) == sorted([
+    assert ls(basetemp(testdir), 'logs') == ['subdir', 'test_foo1.py']
+    assert ls(basetemp(testdir), 'logs/subdir') == ['subsubdir', 'test_foo2.py']
+    assert ls(basetemp(testdir), 'logs/subdir/subsubdir') == ['test_foo3.py']
+    assert ls(basetemp(testdir), 'logs/subdir/subsubdir/test_foo3.py') == ['test_bar']
+    assert ls(basetemp(testdir), 'logs/subdir/test_foo2.py') == ['test_bar']
+    assert ls(basetemp(testdir), 'logs/test_foo1.py') == sorted([
         'test_bar',
         'test_baz',
         'TestInsideClass.test_qez',
@@ -218,16 +212,16 @@ def test_file_handlers_root(testdir):
         '',
     ])
 
-    assert ls(basetemp(testdir), opj('logs')) == ['test_case.py']
-    assert ls(basetemp(testdir), opj('logs', 'test_case.py')) == ['test_case']
-    assert ls(basetemp(testdir), opj('logs', 'test_case.py', 'test_case')) == ['foo', 'logs']
+    assert ls(basetemp(testdir), 'logs') == ['test_case.py']
+    assert ls(basetemp(testdir), 'logs/test_case.py') == ['test_case']
+    assert ls(basetemp(testdir), 'logs/test_case.py/test_case') == ['foo', 'logs']
 
-    FileLineMatcher(basetemp(testdir), opj('logs', 'test_case.py', 'test_case', 'logs')).fnmatch_lines([
+    FileLineMatcher(basetemp(testdir), 'logs/test_case.py/test_case/logs').fnmatch_lines([
         '* foo: this is error',
         '* bar: this is error',
         '* baz: this is error',
     ])
-    FileLineMatcher(basetemp(testdir), opj('logs', 'test_case.py', 'test_case', 'foo')).fnmatch_lines([
+    FileLineMatcher(basetemp(testdir), 'logs/test_case.py/test_case/foo').fnmatch_lines([
         '* foo: this is error',
         '* foo: this is warning',
     ])
