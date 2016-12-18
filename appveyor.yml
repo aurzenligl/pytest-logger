@@ -20,5 +20,3 @@ test_script:
 on_failure:
   - ps: dir "env:"
   - ps: get-content .tox\*\log\*
-artifacts:
-  - path: dist\*
