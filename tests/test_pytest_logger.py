@@ -1,4 +1,3 @@
-import os
 import sys
 import pytest
 from _pytest._code import Source
@@ -374,14 +373,14 @@ def test_xdist(testdir):
             import logging
             def test_case{0}():
                 logging.getLogger('foo').warning('this is test {0}')
-                fail
         """.format(index))
 
     result = testdir.runpytest('-n3')
-    assert result.ret == 1
+    assert result.ret == 0
 
-    assert ls(testdir.tmpdir, 'logs') == ['test_case%s.py' % i for i in range(N)]
-    result.stdout.fnmatch_lines_random(['* wrn foo: this is test %s' % i for i in range(N)])
+    if not win32py2:
+        assert ls(testdir.tmpdir, 'logs') == ['test_case%s.py' % i for i in range(N)]
+
     for index in range(N):
         logfilename = 'logs/test_case{0}.py/test_case{0}/foo'.format(index)
         FileLineMatcher(basetemp(testdir), logfilename).fnmatch_lines(['* wrn foo: this is test %s' % index])
