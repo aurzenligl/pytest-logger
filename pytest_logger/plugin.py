@@ -167,6 +167,7 @@ def _enable(handlers):
 def _disable(handlers):
     for hdlr in handlers:
         hdlr.logger.removeHandler(hdlr)
+        hdlr.close()
 
 
 def _make_handlers(stdoutloggers, fileloggers, item):
