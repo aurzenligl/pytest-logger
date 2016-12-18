@@ -1,9 +1,11 @@
 import sys
 import pytest
+import platform
 from _pytest._code import Source
 from _pytest.pytester import LineMatcher
 
 win32py2 = sys.platform == 'win32' and sys.version_info[0] == 2
+win32pypy = sys.platform == 'win32' and platform.python_implementation() == 'PyPy'
 
 
 def makefile(testdir, path, content):
@@ -357,6 +359,7 @@ def test_skip_gracefully(testdir):
     assert 'logs' not in ls(testdir.tmpdir)
 
 
+@pytest.mark.skipif(win32pypy, reason="pytest-xdist crashes on win32 under pypy")
 def test_xdist(testdir):
     N = 8
     makefile(testdir, ['conftest.py'], """
