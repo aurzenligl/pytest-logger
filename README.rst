@@ -4,6 +4,9 @@
 .. image:: https://img.shields.io/pypi/pyversions/pytest-logger.svg
     :target: https://pypi.python.org/pypi/pytest-logger
     :alt: Supported Python Versions
+.. image:: https://coveralls.io/repos/github/aurzenligl/pytest-logger/badge.svg?branch=master
+    :target: https://coveralls.io/github/aurzenligl/pytest-logger?branch=master
+    :alt: Coverage Status
 .. image:: https://travis-ci.org/aurzenligl/pytest-logger.svg?branch=master
     :target: https://travis-ci.org/aurzenligl/pytest-logger
     :alt: Travis-CI Build Status
