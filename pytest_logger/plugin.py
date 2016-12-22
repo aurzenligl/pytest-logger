@@ -88,7 +88,8 @@ class LoggerState(object):
 
 class LoggerHookspec(object):
     def pytest_logger_stdoutloggers(self, item):
-        """ called before testcase setup, returns loggers for terminal output.
+        """ called before testcase setup. If implemented, given loggers
+        will emit their output to terminal output.
 
         :arg item: test item for which handlers are to be setup.
 
@@ -97,7 +98,8 @@ class LoggerHookspec(object):
         """
 
     def pytest_logger_fileloggers(self, item):
-        """ called before testcase setup, returns loggers for file output.
+        """ called before testcase setup. If implemented, given loggers
+        will emit their output to files within logs temporary directory.
 
         :arg item: test item for which handlers are to be setup.
 
@@ -106,7 +108,13 @@ class LoggerHookspec(object):
         """
 
     def pytest_logger_logdirlink(self, config):
-        """ called after cmdline options parsing, returns location of link to logs dir """
+        """ called after cmdline options parsing.
+        If implemented, symlink to logs directory will be created.
+
+        :arg config: pytest config object, holds e.g. options
+
+        :return string: Absolute path of requested link to logs directory.
+        """
 
 
 class Formatter(logging.Formatter):

@@ -3,22 +3,124 @@ Usage
 
 .. currentmodule:: pytest_logger.plugin
 
-Logging to files or stdout
+By default pytest-logger does nothing in scope of logging.
+It's only default action is to add new hooks and fixture.
+Terminal output, logfiles together with their directory structure, symlink
+appear only when explicitly requested by user via one of hooks or fixture.
+
+Logging to stdout or files
 ---------------------------------------
 
-Implement pytest-logger hooks in your conftest.py to direct logs to terminal or files::
+Implement pytest-logger hooks in your `conftest.py`_ to direct logs to terminal or files.
+You can make up your own cmdline arguments relevant to your test environment for convenience.
 
-    def pytest_logger_fileloggers(item):
-        # handles root logger
-    	return ['']
+Terminal output mixes with normal pytest's output in graceful manner.
+File output is stored in logs directory (see `logs dir layout`_ and `link to logs dir`_).
+
+::
 
     import logging
     def pytest_logger_stdoutloggers(item):
-    	# handles foo logger at chosen level
-        return [('foo', logging.WARN)]
+        # handles foo logger at chosen level and bar at all levels
+        return [('foo', logging.WARN), 'bar']
 
-Hook API:
+    def pytest_logger_fileloggers(item):
+        # handles root logger
+        return ['']
+
+- see :py:meth:`LoggerHookspec.pytest_logger_stdoutloggers`
+- see :py:meth:`LoggerHookspec.pytest_logger_fileloggers`
+
+.. _`logs dir layout`:
+
+The logs directory layout
+---------------------------------------
+
+Directory with logfiles is named "logs" and located under test session's `basetemp`_ directory::
+
+    tmp/
+    └── pytest-of-aurzenligl
+        ├── pytest-0
+        │   └── logs
+        │       (...)
+        ├── pytest-1
+        │   └── logs
+        │       (...)
+        └── pytest-2
+            └── logs
+                (...)
+
+It has structure following pytest test item's `nodeid`_.
+
+    - test directories are directories
+    - test filenames are directories
+    - test functions are directories (each parametrized testcase variant is distinct)
+    - each registered logger is a file (root logger is called 'root')
+
+::
+
+    logs/
+    ├── classtests
+    │   └── test_y.py
+    │       └── TestClass.test_class
+    │           ├── daemon
+    │           └── setup
+    ├── parametrictests
+    │   └── test_z.py
+    │       ├── test_param-2-abc
+    │       └── test_param-4.127-de
+    │           └── setup
+    └── test_p.py
+        └── test_cat
+            └── proc
+
+.. _`link to logs dir`:
+
+Link to logs directory
+---------------------------------------
+
+Implement link hook to have access to logfiles from place where you regularly run your tests.
+Link is created in a race-safe manner, even if multiple pytest processes run tests simultaneously.
+
+::
+
+    # content of conftest.py
+    import os
+    def pytest_logger_logdirlink(config):
+        return os.path.join(os.path.dirname(__file__), 'logs')
+
+::
+
+    $ ls -o
+    total 80
+    drwxr-xr-x  9 aurzenligl 4096 Dec 22 21:09 .
+    drwxr-xr-x 28 aurzenligl 4096 Dec 14 23:33 ..
+    -rwxr-xr-x  1 aurzenligl 3028 Dec 11 02:18 conftest.py
+    lrwxrwxrwx  1 aurzenligl   39 Dec 22 21:09 logs -> /tmp/pytest-of-aurzenligl/pytest-2/logs
+    -rwxr-xr-x  1 aurzenligl  817 Dec 11 02:13 test_x.py
+
+- see :py:meth:`LoggerHookspec.pytest_logger_logdirlink`
+
+The logdir fixture
+---------------------------------------
+
+Like pytest's `tmpdir`_ it's a `py.path.local`_ object which offers os.path methods.
+Points to logs subdirectory related to particular testcase.
+Directory is ensured to exist and custom log files can be written into it::
+
+    def test_foo(logdir):
+        logdir.join('myfile.txt').write('abc')
+
+API reference
+---------------------------------------
 
 .. autoclass:: LoggerHookspec()
-	:members: pytest_logger_stdoutloggers,
-	          pytest_logger_fileloggers
+    :members: pytest_logger_stdoutloggers,
+              pytest_logger_fileloggers,
+              pytest_logger_logdirlink
+
+.. _`conftest.py`: http://docs.pytest.org/en/latest/writing_plugins.html#conftest-py
+.. _`basetemp`: http://doc.pytest.org/en/latest/tmpdir.html#the-default-base-temporary-directory
+.. _`nodeid`: http://docs.pytest.org/en/latest/writing_plugins.html#_pytest.main.Node.nodeid
+.. _`tmpdir`: http://docs.pytest.org/en/latest/tmpdir.html#the-tmpdir-fixture
+.. _`py.path.local`: http://py.rtfd.org/en/latest/path.html
