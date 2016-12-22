@@ -4,6 +4,9 @@
 .. image:: https://img.shields.io/pypi/pyversions/pytest-logger.svg
     :target: https://pypi.python.org/pypi/pytest-logger
     :alt: Supported Python Versions
+.. image:: https://readthedocs.org/projects/pytest-logger/badge
+    :target: http://pytest-logger.readthedocs.io/en/latest
+    :alt: Documentation Status
 .. image:: https://coveralls.io/repos/github/aurzenligl/pytest-logger/badge.svg?branch=master
     :target: https://coveralls.io/github/aurzenligl/pytest-logger?branch=master
     :alt: Coverage Status
@@ -75,20 +78,20 @@ and expect output in terminal (if not captured)::
     $ py.test -s -v
     (...)
     test_something.py::test_one
-    00:00.001 foo: constructing session thing
-    00:00.001 foo: constructing testcase thing
-    00:00.002 foo: one executes
-    00:00.002 bar: this test does nothing aside from logging
+    00:00.001 inf foo: constructing session thing
+    00:00.001 inf foo: constructing testcase thing
+    00:00.002 inf foo: one executes
+    00:00.002 wrn bar: this test does nothing aside from logging
     PASSED
-    00:00.002 foo: destroying testcase thing
+    00:00.002 inf foo: destroying testcase thing
 
     test_something.py::test_two
-    00:00.000 foo: constructing testcase thing
-    00:00.000 foo: two executes
-    00:00.000 bar: neither does this
+    00:00.000 inf foo: constructing testcase thing
+    00:00.000 inf foo: two executes
+    00:00.000 wrn bar: neither does this
     PASSED
-    00:00.000 foo: destroying testcase thing
-    00:00.001 foo: destroying session thing
+    00:00.001 inf foo: destroying testcase thing
+    00:00.001 inf foo: destroying session thing
     (...)
 
 and - the same - in filesystem::

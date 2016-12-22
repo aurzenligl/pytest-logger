@@ -31,6 +31,24 @@ File output is stored in logs directory (see `logs dir layout`_ and `link to log
 - see :py:meth:`LoggerHookspec.pytest_logger_stdoutloggers`
 - see :py:meth:`LoggerHookspec.pytest_logger_fileloggers`
 
+Things to note:
+
+    - **stdout capturing:** in order to see logs printed on terminal in real time
+      during test execution, you need to disable output capturing by ``-s`` switch.
+    - **default root level:** by default root logger (and all its children)
+      has warning level threshold set. This can filter logs regardless of handler levels
+      user gives via hooks. Be sure to set root logger level as NOTSET if you
+      don't want this to happen.
+    - **no handlers warning:** if log wouldn't get filtered, but there are no handlers
+      added to logger, `unwanted message`_ is printed. Add `NullHandler`_
+      to such loggers.
+    - **default logging config:** if root logger has no handlers, using module level
+      logging functions will setup basic logging config. It makes no sense in combintion
+      with this plugin. Be sure root logger has some handler (at least `NullHandler`_)
+      or just don't use these functions.
+    - **pytest-xdist:** stdout output is not printed to terminal in `pytest-xdist`_ runs.
+      File output works as in single process mode.
+
 .. _`logs dir layout`:
 
 The logs directory layout
@@ -120,6 +138,9 @@ API reference
               pytest_logger_logdirlink
 
 .. _`conftest.py`: http://docs.pytest.org/en/latest/writing_plugins.html#conftest-py
+.. _`unwanted message`: https://docs.python.org/2/howto/logging.html#what-happens-if-no-configuration-is-provided
+.. _`NullHandler`: https://docs.python.org/2/library/logging.handlers.html#logging.NullHandler
+.. _`pytest-xdist`: https://pypi.python.org/pypi/pytest-xdist
 .. _`basetemp`: http://doc.pytest.org/en/latest/tmpdir.html#the-default-base-temporary-directory
 .. _`nodeid`: http://docs.pytest.org/en/latest/writing_plugins.html#_pytest.main.Node.nodeid
 .. _`tmpdir`: http://docs.pytest.org/en/latest/tmpdir.html#the-tmpdir-fixture

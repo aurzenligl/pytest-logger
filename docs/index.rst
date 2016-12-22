@@ -1,8 +1,8 @@
 pytest-logger
 ===================================
 
-The pytest-logger is a pytest plugin which handles logs emitted
-with Python's logging module. Logs are output to terminal or files
+The pytest-logger is a `pytest`_ plugin which handles logs emitted
+by Python's `logging`_ module. Logs are output to terminal or files
 in configurable manner.
 
 .. toctree::
@@ -10,3 +10,6 @@ in configurable manner.
 
    overview
    usage
+
+.. _`pytest`: http://docs.pytest.org
+.. _`logging`: https://docs.python.org/2/library/logging.html
