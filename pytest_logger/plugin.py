@@ -88,10 +88,22 @@ class LoggerState(object):
 
 class LoggerHookspec(object):
     def pytest_logger_stdoutloggers(self, item):
-        """ called before testcase setup, returns list of logger names """
+        """ called before testcase setup, returns loggers for terminal output.
+
+        :arg item: test item for which handlers are to be setup.
+
+        :return list: List should contain logger name strings
+                      or tuples with logger name string and logging level.
+        """
 
     def pytest_logger_fileloggers(self, item):
-        """ called before testcase setup, returns list of logger names """
+        """ called before testcase setup, returns loggers for file output.
+
+        :arg item: test item for which handlers are to be setup.
+
+        :return list: List should contain logger name strings
+                      or tuples with logger name string and logging level.
+        """
 
     def pytest_logger_logdirlink(self, config):
         """ called after cmdline options parsing, returns location of link to logs dir """
