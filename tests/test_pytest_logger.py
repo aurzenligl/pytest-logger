@@ -1,7 +1,7 @@
 import sys
 import pytest
 import platform
-from _pytest._code import Source
+from py.code import Source
 from _pytest.pytester import LineMatcher
 
 win32py2 = sys.platform == 'win32' and sys.version_info[0] == 2
