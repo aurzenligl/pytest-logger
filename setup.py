@@ -24,6 +24,7 @@ setup(
     long_description=read('README.rst'),
     packages=['pytest_logger'],
     install_requires=['pytest>=2.9'],
+    keywords='py.test pytest logging',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Framework :: Pytest',
@@ -33,7 +34,6 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: Implementation :: CPython',
