@@ -1,5 +1,17 @@
 include LICENSE
 include README.rst
+include CHANGELOG
+
+include *.yml
+include .bumpversion.cfg
+include tox.ini
+
+recursive-include docs *.py
+recursive-include docs *.rst
+recursive-include docs Makefile
+recursive-include docs *.bat
+recursive-include tests *.py
+recursive-include scripts *.bat
 
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
