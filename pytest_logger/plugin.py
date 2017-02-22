@@ -1,6 +1,7 @@
 import os
 import sys
 import re
+import py
 import pytest
 import logging
 import time
@@ -13,6 +14,16 @@ if PY2:
 else:
     string_type = str
 
+
+@pytest.hookimpl
+def pytest_addoption(parser):
+    """Add options to control logger"""
+    parser.addini(
+        name='logger_logdir',
+        help='base directory with log files for file loggers [basetemp]',
+        default=None,
+    )
+    parser.getgroup('logger').addoption('--logger-logdir', dest='logger_logdir')
 
 def pytest_configure(config):
     config.pluginmanager.register(LoggerPlugin(config), '_logger')
@@ -32,7 +43,17 @@ class LoggerPlugin(object):
         ldir = self._logsdir
         if ldir:
             return ldir
-        ldir = self._logsdir = _make_logsdir(self.config._tmpdirhandler, self.logdirlinks)
+        logger_logdir = self.config.getoption('logger_logdir')
+        if logger_logdir is None or logger_logdir == '':
+            logger_logdir = self.config.getini('logger_logdir')
+        if logger_logdir is None or logger_logdir == '':
+            logsdir = self.config._tmpdirhandler.getbasetemp()
+            if logsdir.basename.startswith('popen-gw'):
+                logsdir = logsdir.join('..')
+        else:
+            logsdir = py.path.local(logger_logdir)
+
+        ldir = self._logsdir = _make_logsdir(logsdir, self.logdirlinks)
         return ldir
 
     def pytest_runtest_setup(self, item):
@@ -164,10 +185,7 @@ def _refresh_link(source, link_name):
         pass
 
 
-def _make_logsdir(tmpdirhandler, logdirlinks):
-    logsdir = tmpdirhandler.getbasetemp()
-    if logsdir.basename.startswith('popen-gw'):
-        logsdir = logsdir.join('..')
+def _make_logsdir(logsdir, logdirlinks):
     logsdir = logsdir.join('logs').ensure(dir=1)
     for link in logdirlinks:
         _refresh_link(str(logsdir), link)
