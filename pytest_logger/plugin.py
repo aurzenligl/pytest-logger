@@ -1,5 +1,6 @@
 import os
 import sys
+import platform
 import re
 import pytest
 import logging
@@ -12,6 +13,28 @@ if PY2:
     string_type = basestring
 else:
     string_type = str
+
+os_symlink = getattr(os, "symlink", None)
+if callable(os_symlink) is False and platform.system() == 'Windows':
+    
+    def symlink_win(source, linkname):
+        """ Symlink implementation on Windows platform, working from Vista
+        inspired by http://stackoverflow.com/questions/6260149/os-symlink-support-in-windows
+        """
+        import ctypes
+        flags = 1 if source is not None and os.path.isdir(source) else 0
+        try:
+            linkname = linkname.replace('/', '\\')
+            csl = ctypes.windll.kernel32.CreateSymbolicLinkW
+            csl.argtypes = (ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_uint32)
+            csl.restype = ctypes.c_ubyte
+            ret = csl(linkname, source, flags)
+        except Exception:
+            ret = 0
+        if ret == 0:
+            raise OSError
+
+    os.symlink = symlink_win
 
 
 def pytest_configure(config):
