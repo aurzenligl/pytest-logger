@@ -47,13 +47,15 @@ class LoggerPlugin(object):
         if logger_logdir is None or logger_logdir == '':
             logger_logdir = self.config.getini('logger_logdir')
         if logger_logdir is None or logger_logdir == '':
-            logsdir = self.config._tmpdirhandler.getbasetemp()
-            if logsdir.basename.startswith('popen-gw'):
-                logsdir = logsdir.join('..')
+            ldir = _make_logsdir_tmpdir(self.config._tmpdirhandler)
         else:
-            logsdir = py.path.local(logger_logdir)
+            ldir = _make_logsdir_dir(logger_logdir)
 
-        ldir = self._logsdir = _make_logsdir(logsdir, self.logdirlinks)
+        self._logsdir = ldir
+
+        for link in self.logdirlinks:
+            _refresh_link(str(ldir), link)
+
         return ldir
 
     def pytest_runtest_setup(self, item):
@@ -185,10 +187,16 @@ def _refresh_link(source, link_name):
         pass
 
 
-def _make_logsdir(logsdir, logdirlinks):
+def _make_logsdir_tmpdir(tmpdirhandler):
+    logsdir = tmpdirhandler.getbasetemp()
+    if logsdir.basename.startswith('popen-gw'):
+        logsdir = logsdir.join('..')
     logsdir = logsdir.join('logs').ensure(dir=1)
-    for link in logdirlinks:
-        _refresh_link(str(logsdir), link)
+    return logsdir
+
+
+def _make_logsdir_dir(dstname):
+    logsdir = py.path.local(dstname).ensure(dir=1)
     return logsdir
 
 
