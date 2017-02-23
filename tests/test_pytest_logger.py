@@ -19,8 +19,10 @@ def ls(dir, filepath=''):
 def basetemp(testdir):
     return testdir.tmpdir.join('..', 'basetemp')
 
+
 def outdir(testdir, dst):
     return testdir.tmpdir.join('..', dst)
+
 
 class FileLineMatcher(LineMatcher):
     def __init__(self, dir, filepath):
@@ -451,8 +453,7 @@ def test_logsdir_ini(testdir):
     logsdirname = 'myinilogs'
     makefile(testdir, ['pytest.ini'], """
         [pytest]
-        
-        logger_logsdir={}}
+        logger_logsdir={}
     """.format(outdir(testdir, logsdirname)))
 
     result = testdir.runpytest('-s')
