@@ -411,7 +411,7 @@ def test_logsdir_option(testdir):
     """)
 
     logsdirname = 'myoptlogs'
-    result = testdir.runpytest('-s --logger-logsdir={}'.format(outdir(testdir, logsdirname)))
+    result = testdir.runpytest(['-s'], ['--logger-logsdir={}'.format(outdir(testdir, logsdirname))])
     assert result.ret == 0
     result.stdout.fnmatch_lines([
         '',
