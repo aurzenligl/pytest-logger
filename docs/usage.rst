@@ -54,7 +54,10 @@ Things to note:
 The logs directory layout
 ---------------------------------------
 
-Directory with logfiles is named "logs" and located under test session's `basetemp`_ directory::
+Directory with logfiles is located
+    - under test session's `basetemp`_ directory named "logs"
+
+::
 
     tmp/
     └── pytest-of-aurzenligl
@@ -67,6 +70,15 @@ Directory with logfiles is named "logs" and located under test session's `basete
         └── pytest-2
             └── logs
                 (...)
+
+or
+     - under predefined location, if `--logger-logsdir` option or `logger_logsdir` entry in configuration file defined
+
+::
+
+      <logger_logsdir>/
+      └── (...)
+
 
 It has structure following pytest test item's `nodeid`_.
 
@@ -145,3 +157,13 @@ API reference
 .. _`nodeid`: http://docs.pytest.org/en/latest/writing_plugins.html#_pytest.main.Node.nodeid
 .. _`tmpdir`: http://docs.pytest.org/en/latest/tmpdir.html#the-tmpdir-fixture
 .. _`py.path.local`: http://py.rtfd.org/en/latest/path.html
+
+Command line options
+---------------------------------------
+
+`--logger-logsdir=<logsdir>`: where <logsdir> is root directory where log files are created 
+
+Configuration file parameters
+---------------------------------------
+
+`logger_logsdir=<logsdir>`: where <logsdir> is root directory where log files are created 
