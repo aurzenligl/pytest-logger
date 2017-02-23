@@ -24,6 +24,7 @@ def pytest_addoption(parser):
     )
     parser.getgroup('logger').addoption('--logger-logsdir', dest='logger_logsdir')
 
+
 def pytest_configure(config):
     config.pluginmanager.register(LoggerPlugin(config), '_logger')
 
