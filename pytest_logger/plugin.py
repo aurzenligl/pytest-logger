@@ -194,8 +194,12 @@ def _make_logsdir_tmpdir(tmpdirhandler):
     return logsdir
 
 
-def _make_logsdir_dir(dstname):
-    logsdir = py.path.local(dstname).ensure(dir=1)
+def _make_logsdir_dir(dstname, cleandir=True):
+    logsdir = py.path.local(dstname)
+    if cleandir:
+        if logsdir.check():
+            logsdir.remove()
+        logsdir.mkdir()
     return logsdir
 
 
