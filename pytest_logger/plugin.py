@@ -15,15 +15,14 @@ else:
     string_type = str
 
 
-@pytest.hookimpl
 def pytest_addoption(parser):
     """Add options to control logger"""
     parser.addini(
-        name='logger_logdir',
+        name='logger_logsdir',
         help='base directory with log files for file loggers [basetemp]',
         default=None,
     )
-    parser.getgroup('logger').addoption('--logger-logdir', dest='logger_logdir')
+    parser.getgroup('logger').addoption('--logger-logsdir', dest='logger_logsdir')
 
 def pytest_configure(config):
     config.pluginmanager.register(LoggerPlugin(config), '_logger')
@@ -43,13 +42,13 @@ class LoggerPlugin(object):
         ldir = self._logsdir
         if ldir:
             return ldir
-        logger_logdir = self.config.getoption('logger_logdir')
-        if logger_logdir is None or logger_logdir == '':
-            logger_logdir = self.config.getini('logger_logdir')
-        if logger_logdir is None or logger_logdir == '':
-            ldir = _make_logsdir_tmpdir(self.config._tmpdirhandler)
+        logger_logsdir = self.config.getoption('logger_logsdir')
+        if logger_logsdir is None or logger_logsdir == '':
+            logger_logsdir = self.config.getini('logger_logsdir')
+        if logger_logsdir:
+            ldir = _make_logsdir_dir(logger_logsdir)
         else:
-            ldir = _make_logsdir_dir(logger_logdir)
+            ldir = _make_logsdir_tmpdir(self.config._tmpdirhandler)
 
         self._logsdir = ldir
 
