@@ -44,7 +44,7 @@ class LoggerPlugin(object):
         if ldir:
             return ldir
         logger_logsdir = self.config.getoption('logger_logsdir')
-        if logger_logsdir is None or logger_logsdir == '':
+        if not logger_logsdir:
             logger_logsdir = self.config.getini('logger_logsdir')
         if logger_logsdir:
             ldir = _make_logsdir_dir(logger_logsdir)
