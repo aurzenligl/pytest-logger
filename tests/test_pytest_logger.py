@@ -468,7 +468,7 @@ def test_logsdir_cleanup(testdir, conftest_py, test_case_py):
     """.format(logsdir))
 
     logsdir.ensure('tmpfile').write('\n'.join(Source('this shall be removed')))
-    subdir = logsdir.join('tmpdir')
+    logsdir.join('tmpdir')
 
     result = testdir.runpytest('-s')
     assert result.ret == 0
