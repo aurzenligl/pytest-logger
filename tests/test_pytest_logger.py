@@ -408,7 +408,7 @@ def test_xdist(testdir):
 def test_logsdir_option(testdir, conftest_py, test_case_py):
 
     logsdir = outdir(testdir, 'myinilogs')
-    result = testdir.runpytest(['-s', '--logger-logsdir={}'.format(str(logsdir))])
+    result = testdir.runpytest('-s', '--logger-logsdir={}'.format(str(logsdir)))
     assert result.ret == 0
     result.stdout.fnmatch_lines([
         '',
