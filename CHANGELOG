@@ -1,3 +1,7 @@
+0.1.4
+-----------------------------------
+- logdirs cmdline/ini option, allowing to set logs directory
+
 0.1.3
 -----------------------------------
 - housekeeping:
