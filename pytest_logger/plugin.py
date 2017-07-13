@@ -235,7 +235,7 @@ def _make_handlers(stdoutloggers, fileloggers, item):
 def _make_stdout_handlers(loggers, fmt):
     def make_handler(logger_and_level, fmt):
         logger, level = logger_and_level
-        handler = logging.StreamHandler(stream=sys.stdout)
+        handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(fmt)
         handler.setLevel(level)
         handler.logger = logger
