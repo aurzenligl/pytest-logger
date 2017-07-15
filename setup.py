@@ -13,7 +13,7 @@ def read(fname):
 
 setup(
     name='pytest-logger',
-    version='0.1.4',
+    version='0.1.5',
     author='Krzysztof Laskowski',
     author_email='krzysztof.laskowski@nokia.com',
     maintainer='Krzysztof Laskowski',
@@ -32,6 +32,7 @@ setup(
         'Topic :: Software Development :: Testing',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
