@@ -149,8 +149,8 @@ class Formatter(logging.Formatter):
         logging.DEBUG: 'dbg',
     }
 
-    def __init__(self, *args, **kwargs):
-        super(Formatter, self).__init__(*args, **kwargs)
+    def __init__(self, fmt):
+        logging.Formatter.__init__(self, fmt)
         self._start = time.time()
 
     def formatTime(self, record, datefmt=None):
@@ -161,7 +161,7 @@ class Formatter(logging.Formatter):
     def format(self, record):
         record.levelshortname = Formatter.short_level_names.get(record.levelno,
                                                                 'l%s' % record.levelno)
-        return super(Formatter, self).format(record)
+        return logging.Formatter.format(self, record)
 
 
 @pytest.fixture
@@ -235,7 +235,7 @@ def _make_handlers(stdoutloggers, fileloggers, item):
 def _make_stdout_handlers(loggers, fmt):
     def make_handler(logger_and_level, fmt):
         logger, level = logger_and_level
-        handler = logging.StreamHandler(stream=sys.stdout)
+        handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(fmt)
         handler.setLevel(level)
         handler.logger = logger
