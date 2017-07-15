@@ -5,10 +5,11 @@ cache:
 environment:
   matrix:
     - TOXENV: check
-    - TOXENV: 'py27-pytest29,py27-pytest30'
-    - TOXENV: 'py34-pytest29,py34-pytest30'
-    - TOXENV: 'py35-pytest29,py35-pytest30'
-    - TOXENV: 'pypy-pytest29,pypy-pytest30'
+    - TOXENV: 'py26-pytest30,py26-pytest31'
+    - TOXENV: 'py27-pytest30,py27-pytest31'
+    - TOXENV: 'py35-pytest30,py35-pytest31'
+    - TOXENV: 'py36-pytest30,py36-pytest31'
+    - TOXENV: 'pypy-pytest30,pypy-pytest31'
 init:
   - ps: echo $env:TOXENV
   - ps: ls C:\Python*
