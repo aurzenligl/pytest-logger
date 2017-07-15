@@ -1,5 +1,4 @@
 language: python
-python: '3.6'
 sudo: false
 env:
   global:
@@ -9,16 +8,28 @@ env:
   matrix:
     - TOXENV=check
     - TOXENV=coverage
-    - TOXENV=py26-pytest30
-    - TOXENV=py26-pytest31
-    - TOXENV=py27-pytest30
-    - TOXENV=py27-pytest31
-    - TOXENV=py35-pytest30
-    - TOXENV=py35-pytest31
-    - TOXENV=py36-pytest30
-    - TOXENV=py36-pytest31
-    - TOXENV=pypy-pytest30
-    - TOXENV=pypy-pytest31
+matrix:
+  include:
+    - python: '2.6'
+      env: TOXENV=py26-pytest30
+    - python: '2.6'
+      env: TOXENV=py26-pytest31
+    - python: '2.7'
+      env: TOXENV=py27-pytest30
+    - python: '2.7'
+      env: TOXENV=py27-pytest31
+    - python: '3.5'
+      env: TOXENV=py35-pytest30
+    - python: '3.5'
+      env: TOXENV=py35-pytest31
+    - python: '3.6'
+      env: TOXENV=py36-pytest30
+    - python: '3.6'
+      env: TOXENV=py36-pytest31
+    - python: 'pypy-5.4'
+      env: TOXENV=pypy-pytest30
+    - python: 'pypy-5.4'
+      env: TOXENV=pypy-pytest31
 before_install:
   - python --version
   - uname -a
