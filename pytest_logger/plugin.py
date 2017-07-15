@@ -140,7 +140,7 @@ class LoggerHookspec(object):
         """
 
 
-class Formatter(logging.Formatter):
+class Formatter(logging.Formatter, object):
     short_level_names = {
         logging.FATAL: 'ftl',
         logging.ERROR: 'err',
