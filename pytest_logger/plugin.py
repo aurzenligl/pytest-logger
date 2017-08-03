@@ -64,7 +64,7 @@ class LoggerPlugin(object):
     def __init__(self, config, logcfg):
         self._config = config
         self._logdirlinks = config.hook.pytest_logger_logdirlink(config=config)
-        self._loggers = _loggers_from_logcfg(config, logcfg)
+        self._loggers = logcfg._enabled and _loggers_from_logcfg(logcfg, config.getoption('log')) or None
         self._logsdir = None
 
     def logsdir(self):
@@ -211,11 +211,17 @@ def logdir(request):
     return _make_logdir(request._pyfuncitem)
 
 
-def _sanitize(filename):
+def _sanitize_nodeid(filename):
+    # TODO: unit test it (2)
     filename = filename.replace('::()::', '.')
     filename = filename.replace('::', '/')
     filename = re.sub(r'\[(.+)\]', r'-\1', filename)
     return filename
+
+
+def _sanitize_level(level):
+    # TODO: unit test it (1)
+    return level
 
 
 def _refresh_link(source, link_name):
@@ -248,7 +254,7 @@ def _make_logsdir_dir(dstname, cleandir=True):
 
 def _make_logdir(item):
     plugin = item.config.pluginmanager.getplugin('_logger')
-    return plugin.logsdir().join(_sanitize(item.nodeid)).ensure(dir=1)
+    return plugin.logsdir().join(_sanitize_nodeid(item.nodeid)).ensure(dir=1)
 
 
 def _enable(handlers):
@@ -262,6 +268,7 @@ def _disable(handlers):
         hdlr.close()
 
 
+# TODO: unit test it (3)
 def _log_option_parser(loggers):
     def parser(arg):
         # XXX: implement me
@@ -288,7 +295,8 @@ def _loggers_from_hooks(item):
     return loggers
 
 
-def _loggers_from_logcfg(config, logcfg):
+# TODO: unit test it (4)
+def _loggers_from_logcfg(logcfg, logopt):
     # XXX: implement me
     return None
 
