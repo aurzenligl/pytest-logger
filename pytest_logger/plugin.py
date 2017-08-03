@@ -15,66 +15,76 @@ else:
     string_type = str
 
 
-def pytest_addoption(parser):
+def pytest_addhooks(pluginmanager):
+    pluginmanager.add_hookspecs(LoggerHookspec)
+
+
+def _late_addoptions(parser, logcfg):
     """Add options to control logger"""
     parser.addini(
         name='logger_logsdir',
         help='base directory with log files for file loggers [basetemp]',
         default=None,
     )
-    parser.getgroup('logger').addoption('--logger-logsdir', dest='logger_logsdir')
+    group = parser.getgroup('logger')
+    group.addoption('--logger-logsdir', dest='logger_logsdir')
+    if logcfg._enabled:
+        # TODO: add ini options
+        # XXX: implement me (check logger)
+        group.addoption('--log', dest='logger_stdout_setting')
+
+
+@pytest.hookimpl(trylast=True)
+def pytest_load_initial_conftests(early_config, parser, args):
+    logcfg = LogConfig()
+    # TODO: detect error if multiple cmdlines
+    early_config.hook.pytest_logger_cmdline(logcfg=logcfg)
+    early_config.pluginmanager.register(EarlyLoggerPlugin(logcfg), '_early_logger')
+    _late_addoptions(parser, logcfg)
 
 
 def pytest_configure(config):
-    config.pluginmanager.register(LoggerPlugin(config), '_logger')
+    early_logger = config.pluginmanager.getplugin('_early_logger')
+    config.pluginmanager.register(LoggerPlugin(config, early_logger._logcfg), '_logger')
 
 
-def pytest_addhooks(pluginmanager):
-    pluginmanager.add_hookspecs(LoggerHookspec)
+class EarlyLoggerPlugin(object):
+    def __init__(self, logcfg):
+        self._logcfg = logcfg
 
 
 class LoggerPlugin(object):
-    def __init__(self, config):
-        self.config = config
-        self.logdirlinks = config.hook.pytest_logger_logdirlink(config=config)
+    def __init__(self, config, logcfg):
+        self._config = config
+        self._logdirlinks = config.hook.pytest_logger_logdirlink(config=config)
+        self._loggers = _loggers_from_logcfg(config, logcfg)
         self._logsdir = None
 
     def logsdir(self):
         ldir = self._logsdir
         if ldir:
             return ldir
-        logger_logsdir = self.config.getoption('logger_logsdir')
+        logger_logsdir = self._config.getoption('logger_logsdir')
         if not logger_logsdir:
-            logger_logsdir = self.config.getini('logger_logsdir')
+            logger_logsdir = self._config.getini('logger_logsdir')
         if logger_logsdir:
             ldir = _make_logsdir_dir(logger_logsdir)
         else:
-            ldir = _make_logsdir_tmpdir(self.config._tmpdirhandler)
+            ldir = _make_logsdir_tmpdir(self._config._tmpdirhandler)
 
         self._logsdir = ldir
 
-        for link in self.logdirlinks:
+        for link in self._logdirlinks:
             _refresh_link(str(ldir), link)
 
         return ldir
 
     def pytest_runtest_setup(self, item):
-        def to_loggers(configs_lists):
-            def to_logger_and_level(cfg):
-                if isinstance(cfg, string_type):
-                    name, level = cfg, logging.NOTSET
-                else:
-                    name, level = cfg
-                logger = logging.getLogger(name)
-                return logger, level
-            return [to_logger_and_level(cfg) for configs in configs_lists for cfg in configs]
-
-        stdoutloggers = to_loggers(item.config.hook.pytest_logger_stdoutloggers(item=item))
-        fileloggers = to_loggers(item.config.hook.pytest_logger_fileloggers(item=item))
+        loggers = _loggers_from_hooks(item)
         item._logger = state = LoggerState(plugin=self,
                                            item=item,
-                                           stdoutloggers=stdoutloggers,
-                                           fileloggers=fileloggers)
+                                           stdoutloggers=loggers.stdout,
+                                           fileloggers=loggers.file)
         state.on_setup()
 
     def pytest_runtest_teardown(self, item, nextitem):
@@ -109,7 +119,28 @@ class LoggerState(object):
         _disable(self.handlers)
 
 
+# XXX: implement me
+class LogConfig(object):
+    def __init__(self):
+        self._enabled = False
+
+    def add_loggers(self, loggers, stdout_level=logging.NOTSET, file_level=logging.NOTSET):
+        self._enabled = True
+
+    def set_default_stdout(self, value):
+        pass
+
+
 class LoggerHookspec(object):
+    def pytest_logger_cmdline(self, logcfg):
+        """ called before cmdline options parsing. If implemented, stdoutloggers
+        and fileloggers hooks will be ignored. Accepts terse configuration
+        of both stdout and file logging, adds cmdline options to manipulate
+        stdout logging.
+
+        :arg logcfg: allows setting loggers and their default settings.
+        """
+
     def pytest_logger_stdoutloggers(self, item):
         """ called before testcase setup. If implemented, given loggers
         will emit their output to terminal output.
@@ -218,6 +249,30 @@ def _disable(handlers):
     for hdlr in handlers:
         hdlr.logger.removeHandler(hdlr)
         hdlr.close()
+
+
+def _loggers_from_hooks(item):
+    def to_loggers(configs_lists):
+        def to_logger_and_level(cfg):
+            if isinstance(cfg, string_type):
+                name, level = cfg, logging.NOTSET
+            else:
+                name, level = cfg
+            logger = logging.getLogger(name)
+            return logger, level
+        return [to_logger_and_level(cfg) for configs in configs_lists for cfg in configs]
+    # TODO: try to make a class Loggers with named constructors
+    class Loggers(object):
+        pass
+    loggers = Loggers()
+    loggers.stdout = to_loggers(item.config.hook.pytest_logger_stdoutloggers(item=item))
+    loggers.file = to_loggers(item.config.hook.pytest_logger_fileloggers(item=item))
+    return loggers
+
+
+def _loggers_from_logcfg(config, logcfg):
+    # XXX: implement me
+    return None
 
 
 def _make_handlers(stdoutloggers, fileloggers, item):
