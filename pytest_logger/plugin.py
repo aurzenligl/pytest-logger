@@ -27,11 +27,18 @@ def _late_addoptions(parser, logcfg):
         default=None,
     )
     group = parser.getgroup('logger')
-    group.addoption('--logger-logsdir', dest='logger_logsdir')
+    group.addoption('--logger-logsdir',
+                    help='pick you own logs directory instead of default '
+                         'directory under session tmpdir')
     if logcfg._enabled:
         # TODO: add ini options
-        # XXX: implement me (check logger)
-        group.addoption('--log', dest='logger_stdout_setting')
+        group.addoption('--log',
+                        default=logcfg._log_option_default,
+                        type=_log_option_parser(logcfg._loggers),
+                        metavar='LOGGER,LOGGER.LEVEL,...',
+                        help='comma delimited list of loggers optionally suffixed with level '
+                             'preceded by a dot. Levels can be lower or uppercase, or numeric. '
+                             'For example: "logger1,logger2.info,logger3.FATAL,logger4.25"')
 
 
 @pytest.hookimpl(trylast=True)
@@ -123,12 +130,16 @@ class LoggerState(object):
 class LogConfig(object):
     def __init__(self):
         self._enabled = False
+        self._loggers = []
+        self._log_option_default = ''
 
     def add_loggers(self, loggers, stdout_level=logging.NOTSET, file_level=logging.NOTSET):
+        # XXX: sanitize levels and report errors like pytest does
         self._enabled = True
+        self._loggers += (loggers, stdout_level, file_level)
 
-    def set_default_stdout(self, value):
-        pass
+    def set_log_option_default(self, value):
+        self._log_option_default = value
 
 
 class LoggerHookspec(object):
@@ -249,6 +260,13 @@ def _disable(handlers):
     for hdlr in handlers:
         hdlr.logger.removeHandler(hdlr)
         hdlr.close()
+
+
+def _log_option_parser(loggers):
+    def parser(arg):
+        # XXX: implement me
+        return 'result'
+    return parser
 
 
 def _loggers_from_hooks(item):
