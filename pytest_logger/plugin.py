@@ -45,7 +45,7 @@ def _late_addoptions(parser, logcfg):
 def pytest_load_initial_conftests(early_config, parser, args):
     logcfg = LogConfig()
     # TODO: detect error if multiple cmdlines
-    early_config.hook.pytest_logger_cmdline(logcfg=logcfg)
+    early_config.hook.pytest_logger_config(logger_config=logcfg)
     early_config.pluginmanager.register(EarlyLoggerPlugin(logcfg), '_early_logger')
     _late_addoptions(parser, logcfg)
 
@@ -143,7 +143,7 @@ class LogConfig(object):
 
 
 class LoggerHookspec(object):
-    def pytest_logger_cmdline(self, logcfg):
+    def pytest_logger_config(self, logger_config):
         """ called before cmdline options parsing. If implemented, stdoutloggers
         and fileloggers hooks will be ignored. Accepts terse configuration
         of both stdout and file logging, adds cmdline options to manipulate
