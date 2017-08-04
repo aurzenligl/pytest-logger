@@ -138,7 +138,7 @@ class LogConfig(object):
     def add_loggers(self, loggers, stdout_level=logging.NOTSET, file_level=logging.NOTSET):
         # XXX: sanitize levels and report errors like pytest does
         self._enabled = True
-        self._loggers += (loggers, stdout_level, file_level)
+        self._loggers.append((loggers, stdout_level, file_level))
 
     def set_log_option_default(self, value):
         self._log_option_default = value
@@ -284,8 +284,10 @@ def _log_option_parser(loggers):
             def find_row(name):
                 return next((row for row in loggers if name in row[0]), None)
             def bad_logger(name):
+                names = [x for row in loggers for x in row[0]]
+                pretty_names = '(' + ', '.join(names) + ')'
                 raise argparse.ArgumentTypeError(
-                    'wrong logger, expected (a, b, c, d, e, f.g.h), got "%s"' % name)
+                    'wrong logger, expected %s, got "%s"' % (pretty_names, name))
             def bad_level(level):
                 raise argparse.ArgumentTypeError(
                     'wrong level, expected (INFO, warn, 15, ...), got "%s"' % level)
@@ -305,6 +307,7 @@ def _log_option_parser(loggers):
             bad_logger(elem)
         return [to_out(x) for x in arg.split(',')]
     return parser
+
 
 def _loggers_from_hooks(item):
     def to_loggers(configs_lists):
