@@ -1,4 +1,5 @@
 import logging
+import argparse
 import pytest
 import pytest_logger.plugin as plugin
 
@@ -10,12 +11,40 @@ def test_sanitize_nodeid():
 
 def test_sanitize_level():
     assert plugin._sanitize_level(logging.INFO) == logging.INFO
+    assert plugin._sanitize_level('15') == 15
     assert plugin._sanitize_level('warn') == logging.WARN
     assert plugin._sanitize_level('FATAL') == logging.FATAL
 
-    with pytest.raises(AttributeError):
+    with pytest.raises(TypeError):
         plugin._sanitize_level('WARN ')
-    with pytest.raises(AttributeError):
+    with pytest.raises(TypeError):
         plugin._sanitize_level('unknown')
     with pytest.raises(TypeError):
         plugin._sanitize_level(1.0)
+
+    assert plugin._sanitize_level('WARN ', raises=False) == None
+
+def test_log_option_parser():
+    loggers = [
+        (['a', 'b', 'c'], 20, 10),
+        (['d'], 30, 15),
+        (['e', 'f.g.h'], 31, 16),
+    ]
+
+    assert plugin._log_option_parser(loggers)('a') == [('a', 20)]
+    assert plugin._log_option_parser(loggers)('a.info') == [('a', logging.INFO)]
+    assert plugin._log_option_parser(loggers)('a.19') == [('a', 19)]
+    assert plugin._log_option_parser(loggers)('f.g.h') == [('f.g.h', 31)]
+    assert plugin._log_option_parser(loggers)('f.g.h.INFO') == [('f.g.h', logging.INFO)]
+    assert plugin._log_option_parser(loggers)('a,b') == [('a', 20), ('b', 20)]
+    assert plugin._log_option_parser(loggers)('a,d.19,e.info') == [('a', 20), ('d', 19), ('e', logging.INFO)]
+
+    with pytest.raises(argparse.ArgumentTypeError) as e:
+        plugin._log_option_parser(loggers)('a.unknown')
+    assert e.value.message == 'wrong level, expected (INFO, warn, 15, ...), got "unknown"'
+    with pytest.raises(argparse.ArgumentTypeError) as e:
+        plugin._log_option_parser(loggers)('alien.info')
+    assert e.value.message == 'wrong logger, expected (a, b, c, d, e, f.g.h), got "alien"'
+    with pytest.raises(argparse.ArgumentTypeError) as e:
+        plugin._log_option_parser(loggers)('alien.unknown')
+    assert e.value.message == 'wrong logger, expected (a, b, c, d, e, f.g.h), got "alien.unknown"'

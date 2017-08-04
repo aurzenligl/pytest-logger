@@ -6,6 +6,7 @@ import pytest
 import logging
 import time
 import datetime
+import argparse
 
 PY2 = sys.version_info[0] == 2
 
@@ -219,13 +220,18 @@ def _sanitize_nodeid(filename):
     return filename
 
 
-def _sanitize_level(level):
+def _sanitize_level(level, raises=True):
     if isinstance(level, string_type):
-        return getattr(logging, level.upper())
+        try:
+            return int(level)
+        except ValueError:
+            int_level = getattr(logging, level.upper(), None)
+            if int_level is not None:
+                return int_level
     elif isinstance(level, int_types):
         return level
-    else:
-        raise TypeError('incorrect logging level, expected int or string, got %s' % level)
+    if raises:
+        raise TypeError('bad logging level, expected int or string, got "%s"' % level)
 
 
 def _refresh_link(source, link_name):
@@ -272,13 +278,33 @@ def _disable(handlers):
         hdlr.close()
 
 
-# TODO: unit test it (3)
 def _log_option_parser(loggers):
     def parser(arg):
-        # XXX: implement me
-        return 'result'
+        def to_out(elem):
+            def find_row(name):
+                return next((row for row in loggers if name in row[0]), None)
+            def bad_logger(name):
+                raise argparse.ArgumentTypeError(
+                    'wrong logger, expected (a, b, c, d, e, f.g.h), got "%s"' % name)
+            def bad_level(level):
+                raise argparse.ArgumentTypeError(
+                    'wrong level, expected (INFO, warn, 15, ...), got "%s"' % level)
+            row = find_row(elem)
+            if row:
+                return elem, row[1]
+            if '.' in elem:
+                elem_name, elem_level = elem.rsplit('.', 1)
+                row = find_row(elem_name)
+                level = _sanitize_level(elem_level, raises=False)
+                if row and level is not None:
+                    return elem_name, level
+                if row:
+                    bad_level(elem_level)
+                if level is not None:
+                    bad_logger(elem_name)
+            bad_logger(elem)
+        return [to_out(x) for x in arg.split(',')]
     return parser
-
 
 def _loggers_from_hooks(item):
     def to_loggers(configs_lists):
