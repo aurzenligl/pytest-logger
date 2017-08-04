@@ -138,7 +138,7 @@ class LogConfig(object):
     def add_loggers(self, loggers, stdout_level=logging.NOTSET, file_level=logging.NOTSET):
         # XXX: sanitize levels and report errors like pytest does
         self._enabled = True
-        self._loggers.append((loggers, stdout_level, file_level))
+        self._loggers.append((loggers, _sanitize_level(stdout_level), _sanitize_level(file_level)))
 
     def set_log_option_default(self, value):
         self._log_option_default = value
@@ -309,6 +309,25 @@ def _log_option_parser(loggers):
     return parser
 
 
+def _loggers_from_logcfg(logcfg, logopt):
+    def to_stdout(loggers, opt):
+        def one(loggers, one):
+            if isinstance(one, string_type):
+                return one, next(row for row in loggers if one in row[0])[1]
+            else:
+                return one
+        return [one(loggers, x) for x in opt]
+    def to_file(loggers):
+        return [(name, row[2]) for row in loggers for name in row[0]]
+
+    class Loggers(object):
+        pass
+    loggers = Loggers()
+    loggers.stdout = to_stdout(logcfg._loggers, logopt)
+    loggers.file = to_file(logcfg._loggers)
+    return loggers
+
+
 def _loggers_from_hooks(item):
     def to_loggers(configs_lists):
         def to_logger_and_level(cfg):
@@ -326,12 +345,6 @@ def _loggers_from_hooks(item):
     loggers.stdout = to_loggers(item.config.hook.pytest_logger_stdoutloggers(item=item))
     loggers.file = to_loggers(item.config.hook.pytest_logger_fileloggers(item=item))
     return loggers
-
-
-# TODO: unit test it (4)
-def _loggers_from_logcfg(logcfg, logopt):
-    # XXX: implement me
-    return None
 
 
 def _make_handlers(stdoutloggers, fileloggers, item):
