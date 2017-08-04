@@ -13,6 +13,7 @@ if PY2:
     string_type = basestring
 else:
     string_type = str
+int_types = (int, long)
 
 
 def pytest_addhooks(pluginmanager):
@@ -212,7 +213,6 @@ def logdir(request):
 
 
 def _sanitize_nodeid(filename):
-    # TODO: unit test it (2)
     filename = filename.replace('::()::', '.')
     filename = filename.replace('::', '/')
     filename = re.sub(r'\[(.+)\]', r'-\1', filename)
@@ -220,8 +220,12 @@ def _sanitize_nodeid(filename):
 
 
 def _sanitize_level(level):
-    # TODO: unit test it (1)
-    return level
+    if isinstance(level, string_type):
+        return getattr(logging, level.upper())
+    elif isinstance(level, int_types):
+        return level
+    else:
+        raise TypeError('incorrect logging level, expected int or string, got %s' % level)
 
 
 def _refresh_link(source, link_name):
