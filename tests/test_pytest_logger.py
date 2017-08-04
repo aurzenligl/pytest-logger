@@ -277,7 +277,6 @@ def test_format(testdir):
         import logging
         def test_case():
             lgr = logging.getLogger('foo')
-            lgr.setLevel(logging.DEBUG)
             lgr.fatal('this is fatal')
             lgr.error('this is error')
             lgr.warning('this is warning')

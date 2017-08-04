@@ -90,8 +90,7 @@ class LoggerPlugin(object):
 
     def pytest_runtest_setup(self, item):
         loggers = _loggers_from_hooks(item)
-        item._logger = state = LoggerState(plugin=self,
-                                           item=item,
+        item._logger = state = LoggerState(item=item,
                                            stdoutloggers=loggers.stdout,
                                            fileloggers=loggers.file)
         state.on_setup()
@@ -109,9 +108,10 @@ class LoggerPlugin(object):
 
 
 class LoggerState(object):
-    def __init__(self, plugin, item, stdoutloggers, fileloggers):
+    def __init__(self, item, stdoutloggers, fileloggers):
         self._put_newlines = bool(item.config.option.capture == 'no' and stdoutloggers)
         self.handlers = _make_handlers(stdoutloggers, fileloggers, item)
+        self.root_enabler = RootEnabler(bool(stdoutloggers and fileloggers))
 
     def put_newline(self):
         if self._put_newlines:
@@ -120,12 +120,29 @@ class LoggerState(object):
     def on_setup(self):
         self.put_newline()
         _enable(self.handlers)
+        self.root_enabler.enable()
 
     def on_teardown(self):
+        self.root_enabler.disable()
         self.put_newline()
 
     def on_makereport(self):
         _disable(self.handlers)
+
+
+class RootEnabler(object):
+    def __init__(self, enabled):
+        self._enabled = enabled
+        self._root_level = logging.root.level
+
+    def enable(self):
+        if self._enabled:
+            self._root_level = logging.root.level
+            logging.root.setLevel(1)  # stops root logger from blocking logs
+
+    def disable(self):
+        if self._enabled:
+            logging.root.setLevel(self._root_level)
 
 
 # XXX: implement me
