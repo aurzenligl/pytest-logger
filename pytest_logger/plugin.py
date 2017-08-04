@@ -46,7 +46,6 @@ def _late_addoptions(parser, logcfg):
 @pytest.hookimpl(trylast=True)
 def pytest_load_initial_conftests(early_config, parser, args):
     logcfg = LogConfig()
-    # TODO: detect error if multiple cmdlines
     early_config.hook.pytest_logger_config(logger_config=logcfg)
     early_config.pluginmanager.register(EarlyLoggerPlugin(logcfg), '_early_logger')
     _late_addoptions(parser, logcfg)
@@ -89,7 +88,7 @@ class LoggerPlugin(object):
         return ldir
 
     def pytest_runtest_setup(self, item):
-        loggers = _loggers_from_hooks(item)
+        loggers = self._loggers or _loggers_from_hooks(item)
         item._logger = state = LoggerState(item=item,
                                            stdoutloggers=loggers.stdout,
                                            fileloggers=loggers.file)
@@ -145,7 +144,7 @@ class RootEnabler(object):
             logging.root.setLevel(self._root_level)
 
 
-# XXX: implement me
+# TODO: document me
 class LogConfig(object):
     def __init__(self):
         self._enabled = False
@@ -153,7 +152,6 @@ class LogConfig(object):
         self._log_option_default = ''
 
     def add_loggers(self, loggers, stdout_level=logging.NOTSET, file_level=logging.NOTSET):
-        # XXX: sanitize levels and report errors like pytest does
         self._enabled = True
         self._loggers.append((loggers, _sanitize_level(stdout_level), _sanitize_level(file_level)))
 
@@ -163,12 +161,12 @@ class LogConfig(object):
 
 class LoggerHookspec(object):
     def pytest_logger_config(self, logger_config):
-        """ called before cmdline options parsing. If implemented, stdoutloggers
-        and fileloggers hooks will be ignored. Accepts terse configuration
-        of both stdout and file logging, adds cmdline options to manipulate
-        stdout logging.
+        """ called before cmdline options parsing. If implemented and used to
+        add at least one logger, stdoutloggers and fileloggers hooks will be ignored.
+        Accepts terse configuration of both stdout and file logging, adds cmdline
+        options to manipulate stdout logging.
 
-        :arg logcfg: allows setting loggers and their default settings.
+        :arg logcfg: allows setting loggers for stdout and file handling and their levels.
         """
 
     def pytest_logger_stdoutloggers(self, item):
@@ -327,6 +325,8 @@ def _log_option_parser(loggers):
 
 
 def _loggers_from_logcfg(logcfg, logopt):
+    class Loggers(object):
+        pass
     def to_stdout(loggers, opt):
         def one(loggers, one):
             if isinstance(one, string_type):
@@ -336,9 +336,6 @@ def _loggers_from_logcfg(logcfg, logopt):
         return [one(loggers, x) for x in opt]
     def to_file(loggers):
         return [(name, row[2]) for row in loggers for name in row[0]]
-
-    class Loggers(object):
-        pass
     loggers = Loggers()
     loggers.stdout = to_stdout(logcfg._loggers, logopt)
     loggers.file = to_file(logcfg._loggers)
@@ -346,18 +343,16 @@ def _loggers_from_logcfg(logcfg, logopt):
 
 
 def _loggers_from_hooks(item):
+    class Loggers(object):
+        pass
     def to_loggers(configs_lists):
         def to_logger_and_level(cfg):
             if isinstance(cfg, string_type):
                 name, level = cfg, logging.NOTSET
             else:
                 name, level = cfg
-            logger = logging.getLogger(name)
-            return logger, level
+            return name, level
         return [to_logger_and_level(cfg) for configs in configs_lists for cfg in configs]
-    # TODO: try to make a class Loggers with named constructors
-    class Loggers(object):
-        pass
     loggers = Loggers()
     loggers.stdout = to_loggers(item.config.hook.pytest_logger_stdoutloggers(item=item))
     loggers.file = to_loggers(item.config.hook.pytest_logger_fileloggers(item=item))
@@ -378,7 +373,8 @@ def _make_handlers(stdoutloggers, fileloggers, item):
 
 def _make_stdout_handlers(loggers, fmt):
     def make_handler(logger_and_level, fmt):
-        logger, level = logger_and_level
+        name, level = logger_and_level
+        logger = logging.getLogger(name)
         handler = logging.StreamHandler(stream=sys.stdout)
         handler.setFormatter(fmt)
         handler.setLevel(level)
@@ -390,8 +386,9 @@ def _make_stdout_handlers(loggers, fmt):
 
 def _make_file_handlers(loggers, fmt, logdir):
     def make_handler(logdir, logger_and_level, fmt):
-        logger, level = logger_and_level
-        name = logger.name == 'root' and 'logs' or logger.name
+        name, level = logger_and_level
+        logger = logging.getLogger(name)
+        name = name or 'logs'
         logfile = str(logdir.join(name))
         handler = logging.FileHandler(filename=logfile, mode='w', delay=True)
         handler.setFormatter(fmt)

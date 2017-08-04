@@ -488,3 +488,52 @@ def test_logsdir_cleanup(testdir, conftest_py, test_case_py):
     FileLineMatcher(logsdir, '{}/test_case/bar'.format(test_case_py)).fnmatch_lines([
         '* bar: this is fatal',
     ])
+
+
+def test_logger_config(testdir):
+    makefile(testdir, ['conftest.py'], """
+        def pytest_logger_config(logger_config):
+            logger_config.add_loggers(['foo', 'bar'], stdout_level='warning', file_level='info')
+            logger_config.add_loggers(['baz'], stdout_level='error', file_level='warning')
+            logger_config.set_log_option_default('foo,bar,baz')
+    """)
+    makefile(testdir, ['test_case.py'], """
+        import logging
+        def test_case():
+            for lgr in (logging.getLogger(name) for name in ['foo', 'bar', 'baz']):
+                lgr.error('this is error')
+                lgr.warning('this is warning')
+                lgr.info('this is info')
+    """)
+
+    result = testdir.runpytest('-s')
+    assert result.ret == 0
+
+    result.stdout.fnmatch_lines([
+        '',
+        'test_case.py ',
+        '* err foo: this is error',
+        '* wrn foo: this is warning',
+        '* err bar: this is error',
+        '* wrn bar: this is warning',
+        '* err baz: this is error',
+        '.',
+        '',
+    ])
+    FileLineMatcher(basetemp(testdir), 'logs/test_case.py/test_case/foo').fnmatch_lines([
+        '* err foo: this is error',
+        '* wrn foo: this is warning',
+        '* inf foo: this is info',
+    ])
+    FileLineMatcher(basetemp(testdir), 'logs/test_case.py/test_case/bar').fnmatch_lines([
+        '* err bar: this is error',
+        '* wrn bar: this is warning',
+        '* inf bar: this is info',
+    ])
+    FileLineMatcher(basetemp(testdir), 'logs/test_case.py/test_case/baz').fnmatch_lines([
+        '* err baz: this is error',
+        '* wrn baz: this is warning',
+    ])
+
+
+# TODO: test cmdline option --log
