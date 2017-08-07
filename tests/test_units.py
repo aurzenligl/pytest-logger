@@ -31,6 +31,9 @@ def test_log_option_parser():
         (['e', 'f.g.h'], 31, 16),
     ]
 
+    assert plugin._log_option_parser([])('') == []
+    assert plugin._log_option_parser(loggers)('') == []
+
     assert plugin._log_option_parser(loggers)('a') == [('a', 20)]
     assert plugin._log_option_parser(loggers)('a.info') == [('a', logging.INFO)]
     assert plugin._log_option_parser(loggers)('a.19') == [('a', 19)]
@@ -50,7 +53,7 @@ def test_log_option_parser():
     assert e.value.message == 'wrong logger, expected (a, b, c, d, e, f.g.h), got "alien.unknown"'
 
 def test_loggers_from_logcfg():
-    logcfg = plugin.LogConfig()
+    logcfg = plugin.LoggerConfig()
     logcfg.add_loggers(['a', 'b', 'c'], stdout_level=logging.ERROR, file_level='warn')
     logcfg.add_loggers(['d'], stdout_level='10')
 

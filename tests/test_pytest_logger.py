@@ -24,6 +24,17 @@ def outdir(testdir, dst):
     return testdir.tmpdir.join('..', dst)
 
 
+def maketestcase(testdir):
+    makefile(testdir, ['test_case.py'], """
+        import logging
+        def test_case():
+            for lgr in (logging.getLogger(name) for name in ['foo', 'bar', 'baz']):
+                lgr.error('this is error')
+                lgr.warning('this is warning')
+                lgr.info('this is info')
+    """)
+
+
 @pytest.fixture
 def conftest_py(testdir):
     filename = 'conftest.py'
@@ -497,14 +508,7 @@ def test_logger_config(testdir):
             logger_config.add_loggers(['baz'], stdout_level='error', file_level='warning')
             logger_config.set_log_option_default('foo,bar,baz')
     """)
-    makefile(testdir, ['test_case.py'], """
-        import logging
-        def test_case():
-            for lgr in (logging.getLogger(name) for name in ['foo', 'bar', 'baz']):
-                lgr.error('this is error')
-                lgr.warning('this is warning')
-                lgr.info('this is info')
-    """)
+    maketestcase(testdir)
 
     result = testdir.runpytest('-s')
     assert result.ret == 0
@@ -536,4 +540,75 @@ def test_logger_config(testdir):
     ])
 
 
-# TODO: test cmdline option --log
+@pytest.mark.parametrize('log_option', ('', '--log=foo.info,baz'))
+def test_logger_config_option(testdir, log_option):
+    makefile(testdir, ['conftest.py'], """
+        def pytest_logger_config(logger_config):
+            logger_config.add_loggers(['foo', 'bar'])
+            logger_config.add_loggers(['baz'], file_level='error')
+    """)
+    maketestcase(testdir)
+
+    opts = ('-s', log_option) if log_option else ('-s',)
+    result = testdir.runpytest(*opts)
+    assert result.ret == 0
+
+    if log_option:
+        result.stdout.fnmatch_lines([
+            '',
+            'test_case.py ',
+            '* err foo: this is error',
+            '* wrn foo: this is warning',
+            '* inf foo: this is info',
+            '* err baz: this is error',
+            '.',
+            '',
+        ])
+    else:
+        result.stdout.fnmatch_lines([
+            '',
+            'test_case.py .',
+            '',
+        ])
+
+
+@pytest.mark.parametrize('with_hook', (False, True))
+def test_logger_config_option_missing_without_hook(testdir, with_hook):
+    makefile(testdir, ['conftest.py'], """
+        def pytest_addoption(parser):
+            parser.addoption('--log')
+    """ + """
+        def pytest_logger_config(logger_config):
+            logger_config.add_loggers(['foo', 'bar'], stdout_level='warning', file_level='info')
+            logger_config.add_loggers(['baz'], stdout_level='error', file_level='warning')
+    """ if with_hook else "")
+    maketestcase(testdir)
+
+    result = testdir.runpytest('-s', '--log=foo')
+    assert result.ret == (3 if with_hook else 0)
+
+    if with_hook:
+        result.stderr.fnmatch_lines([
+            'ArgumentError: argument --log: conflicting option string(s): --log',
+        ])
+
+
+@pytest.mark.parametrize('stdout_hook', [(False, True)])
+@pytest.mark.parametrize('config_hook', [(False, True)])
+def test_error_both_hook_apis_used(testdir, stdout_hook, config_hook):
+    makefile(testdir, ['conftest.py'], ("""
+        def pytest_logger_stdoutloggers(item):
+            return ['foo']
+    """ if stdout_hook else '') + ("""
+        def pytest_logger_config(logger_config):
+            logger_config.add_loggers(['foo'])
+    """ if config_hook else ''))
+    maketestcase(testdir)
+
+    result = testdir.runpytest('-s')
+    assert result.ret == (1 if (stdout_hook and config_hook) else 0)
+
+    if stdout_hook and config_hook:
+        result.stdout.fnmatch_lines([
+            '*AssertionError: pytest_logger_config and pytest_logger_*loggers hooks used at the same time',
+        ])

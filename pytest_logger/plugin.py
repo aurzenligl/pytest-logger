@@ -32,8 +32,8 @@ def _late_addoptions(parser, logcfg):
     group.addoption('--logger-logsdir',
                     help='pick you own logs directory instead of default '
                          'directory under session tmpdir')
+
     if logcfg._enabled:
-        # TODO: add ini options
         group.addoption('--log',
                         default=logcfg._log_option_default,
                         type=_log_option_parser(logcfg._loggers),
@@ -45,7 +45,7 @@ def _late_addoptions(parser, logcfg):
 
 @pytest.hookimpl(trylast=True)
 def pytest_load_initial_conftests(early_config, parser, args):
-    logcfg = LogConfig()
+    logcfg = LoggerConfig()
     early_config.hook.pytest_logger_config(logger_config=logcfg)
     early_config.pluginmanager.register(EarlyLoggerPlugin(logcfg), '_early_logger')
     _late_addoptions(parser, logcfg)
@@ -65,7 +65,7 @@ class LoggerPlugin(object):
     def __init__(self, config, logcfg):
         self._config = config
         self._logdirlinks = config.hook.pytest_logger_logdirlink(config=config)
-        self._loggers = logcfg._enabled and _loggers_from_logcfg(logcfg, config.getoption('log')) or None
+        self._loggers = _loggers_from_logcfg(logcfg, config.getoption('log')) if logcfg._enabled else None
         self._logsdir = None
 
     def logsdir(self):
@@ -88,7 +88,11 @@ class LoggerPlugin(object):
         return ldir
 
     def pytest_runtest_setup(self, item):
-        loggers = self._loggers or _loggers_from_hooks(item)
+        config_loggers = self._loggers
+        hook_loggers = _loggers_from_hooks(item)
+        assert (not config_loggers) or (not hook_loggers),\
+            'pytest_logger_config and pytest_logger_*loggers hooks used at the same time'
+        loggers = config_loggers or hook_loggers
         item._logger = state = LoggerState(item=item,
                                            stdoutloggers=loggers.stdout,
                                            fileloggers=loggers.file)
@@ -145,7 +149,7 @@ class RootEnabler(object):
 
 
 # TODO: document me
-class LogConfig(object):
+class LoggerConfig(object):
     def __init__(self):
         self._enabled = False
         self._loggers = []
@@ -320,13 +324,16 @@ def _log_option_parser(loggers):
                 if level is not None:
                     bad_logger(elem_name)
             bad_logger(elem)
-        return [to_out(x) for x in arg.split(',')]
+        return [to_out(x) for x in arg.split(',') if x]
     return parser
 
 
+class Loggers(object):
+    def __nonzero__(self):
+        return bool(self.stdout) or bool(self.file)
+
+
 def _loggers_from_logcfg(logcfg, logopt):
-    class Loggers(object):
-        pass
     def to_stdout(loggers, opt):
         def one(loggers, one):
             if isinstance(one, string_type):
@@ -343,8 +350,6 @@ def _loggers_from_logcfg(logcfg, logopt):
 
 
 def _loggers_from_hooks(item):
-    class Loggers(object):
-        pass
     def to_loggers(configs_lists):
         def to_logger_and_level(cfg):
             if isinstance(cfg, string_type):
