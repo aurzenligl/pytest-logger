@@ -88,11 +88,7 @@ class LoggerPlugin(object):
         return ldir
 
     def pytest_runtest_setup(self, item):
-        config_loggers = self._loggers
-        hook_loggers = _loggers_from_hooks(item)
-        assert (not config_loggers) or (not hook_loggers),\
-            'pytest_logger_config and pytest_logger_*loggers hooks used at the same time'
-        loggers = config_loggers or hook_loggers
+        loggers = _choose_loggers(self._loggers, _loggers_from_hooks(item))
         item._logger = state = LoggerState(item=item,
                                            stdoutloggers=loggers.stdout,
                                            fileloggers=loggers.file)
@@ -146,6 +142,15 @@ class RootEnabler(object):
     def disable(self):
         if self._enabled:
             logging.root.setLevel(self._root_level)
+
+
+class Loggers(object):
+    def __init__(self, stdout, file_):
+        self.stdout = stdout
+        self.file = file_
+
+    def __nonzero__(self):
+        return bool(self.stdout) or bool(self.file)
 
 
 # TODO: document me
@@ -328,11 +333,6 @@ def _log_option_parser(loggers):
     return parser
 
 
-class Loggers(object):
-    def __nonzero__(self):
-        return bool(self.stdout) or bool(self.file)
-
-
 def _loggers_from_logcfg(logcfg, logopt):
     def to_stdout(loggers, opt):
         def one(loggers, one):
@@ -343,10 +343,10 @@ def _loggers_from_logcfg(logcfg, logopt):
         return [one(loggers, x) for x in opt]
     def to_file(loggers):
         return [(name, row[2]) for row in loggers for name in row[0]]
-    loggers = Loggers()
-    loggers.stdout = to_stdout(logcfg._loggers, logopt)
-    loggers.file = to_file(logcfg._loggers)
-    return loggers
+    return Loggers(
+        stdout=to_stdout(logcfg._loggers, logopt),
+        file_=to_file(logcfg._loggers)
+    )
 
 
 def _loggers_from_hooks(item):
@@ -358,10 +358,16 @@ def _loggers_from_hooks(item):
                 name, level = cfg
             return name, level
         return [to_logger_and_level(cfg) for configs in configs_lists for cfg in configs]
-    loggers = Loggers()
-    loggers.stdout = to_loggers(item.config.hook.pytest_logger_stdoutloggers(item=item))
-    loggers.file = to_loggers(item.config.hook.pytest_logger_fileloggers(item=item))
-    return loggers
+    return Loggers(
+        stdout=to_loggers(item.config.hook.pytest_logger_stdoutloggers(item=item)),
+        file_=to_loggers(item.config.hook.pytest_logger_fileloggers(item=item))
+    )
+
+
+def _choose_loggers(config_loggers, hook_loggers):
+    assert (not config_loggers) or (not hook_loggers),\
+        'pytest_logger_config and pytest_logger_*loggers hooks used at the same time'
+    return config_loggers or hook_loggers
 
 
 def _make_handlers(stdoutloggers, fileloggers, item):

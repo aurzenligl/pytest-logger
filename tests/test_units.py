@@ -52,6 +52,14 @@ def test_log_option_parser():
         plugin._log_option_parser(loggers)('alien.unknown')
     assert e.value.message == 'wrong logger, expected (a, b, c, d, e, f.g.h), got "alien.unknown"'
 
+def test_loggers_from_logcfg_empty():
+    logcfg = plugin.LoggerConfig()
+
+    loggers = plugin._loggers_from_logcfg(logcfg, [])
+    assert loggers.stdout == []
+    assert loggers.file == []
+    assert not loggers
+
 def test_loggers_from_logcfg():
     logcfg = plugin.LoggerConfig()
     logcfg.add_loggers(['a', 'b', 'c'], stdout_level=logging.ERROR, file_level='warn')
@@ -62,3 +70,4 @@ def test_loggers_from_logcfg():
     loggers = plugin._loggers_from_logcfg(logcfg, log_option)
     assert loggers.stdout == [('b', logging.FATAL), ('d', 10)]
     assert loggers.file == [('a', logging.WARN), ('b', logging.WARN), ('c', logging.WARN), ('d', 0)]
+    assert loggers
