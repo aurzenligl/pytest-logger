@@ -137,7 +137,7 @@ class RootEnabler(object):
     def enable(self):
         if self._enabled:
             self._root_level = logging.root.level
-            logging.root.setLevel(1)  # stops root logger from blocking logs
+            logging.root.setLevel(logging.NOTSET)  # stops root logger from blocking logs
 
     def disable(self):
         if self._enabled:
