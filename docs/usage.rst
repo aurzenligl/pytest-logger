@@ -72,7 +72,7 @@ Directory with logfiles is located
                 (...)
 
 or
-     - under predefined location, if `--logger-logsdir` option or `logger_logsdir` entry in configuration file defined
+     - under predefined location, if `-\\-logger-logsdir` option or `logger_logsdir` entry in configuration file defined
 
 ::
 
@@ -145,9 +145,14 @@ API reference
 ---------------------------------------
 
 .. autoclass:: LoggerHookspec()
-    :members: pytest_logger_stdoutloggers,
+    :members: pytest_logger_config,
+              pytest_logger_stdoutloggers,
               pytest_logger_fileloggers,
               pytest_logger_logdirlink
+
+.. autoclass:: LoggerConfig()
+    :members: add_loggers,
+              set_log_option_default
 
 .. _`conftest.py`: http://docs.pytest.org/en/latest/writing_plugins.html#conftest-py
 .. _`unwanted message`: https://docs.python.org/2/howto/logging.html#what-happens-if-no-configuration-is-provided
@@ -161,9 +166,16 @@ API reference
 Command line options
 ---------------------------------------
 
-`--logger-logsdir=<logsdir>`: where <logsdir> is root directory where log files are created 
+`-\\-logger-logsdir=<logsdir>`
+    where <logsdir> is root directory where log files are created
+
+`-\\-log=<loggers>`
+    where <loggers> are a comma delimited list of loggers optionally suffixed
+    with level preceded by a dot. Levels can be lower or uppercase, or numeric.
+    For example: "logger1,logger2.info,logger3.FATAL,logger4.25"
 
 Configuration file parameters
 ---------------------------------------
 
-`logger_logsdir=<logsdir>`: where <logsdir> is root directory where log files are created 
+`logger_logsdir=<logsdir>`
+    where <logsdir> is root directory where log files are created

@@ -153,34 +153,52 @@ class Loggers(object):
         return bool(self.stdout) or bool(self.file)
 
 
-# TODO: document me
 class LoggerConfig(object):
+    """Configuration of logging to stdout and filesystem."""
+
     def __init__(self):
         self._enabled = False
         self._loggers = []
         self._log_option_default = ''
 
     def add_loggers(self, loggers, stdout_level=logging.NOTSET, file_level=logging.NOTSET):
+        """Adds loggers for stdout/filesystem handling.
+
+        Stdout: loggers will log to stdout only when mentioned in `log` option. If they're
+        mentioned without explicit level, `stdout_level` will be used.
+
+        Filesystem: loggers will log to files at `file_level`.
+
+        :arg loggers: List of logger names.
+
+        :arg stdout_level: Default level at which stdout handlers will pass logs.
+           By default: `logging.NOTSET`, which means: pass everything.
+
+        :arg file_level: Level at which filesystem handlers will pass logs.
+           By default: `logging.NOTSET`, which means: pass everything.
+        """
         self._enabled = True
         self._loggers.append((loggers, _sanitize_level(stdout_level), _sanitize_level(file_level)))
 
     def set_log_option_default(self, value):
+        """ Sets default value of `log` option."""
         self._log_option_default = value
 
 
 class LoggerHookspec(object):
     def pytest_logger_config(self, logger_config):
-        """ called before cmdline options parsing. If implemented and used to
-        add at least one logger, stdoutloggers and fileloggers hooks will be ignored.
-        Accepts terse configuration of both stdout and file logging, adds cmdline
-        options to manipulate stdout logging.
+        """ called before cmdline options parsing. Accepts terse configuration
+        of both stdout and file logging, adds cmdline options to manipulate
+        stdout logging. Cannot be used together with \*loggers hooks.
 
-        :arg logcfg: allows setting loggers for stdout and file handling and their levels.
+        :arg logger_config: instance of :py:class:`LoggerConfig`, allows
+           setting loggers for stdout and file handling and their levels.
         """
 
     def pytest_logger_stdoutloggers(self, item):
         """ called before testcase setup. If implemented, given loggers
-        will emit their output to terminal output.
+        will emit their output to terminal output. Cannot be used together with
+        logger_config hook.
 
         :arg item: test item for which handlers are to be setup.
 
@@ -191,6 +209,7 @@ class LoggerHookspec(object):
     def pytest_logger_fileloggers(self, item):
         """ called before testcase setup. If implemented, given loggers
         will emit their output to files within logs temporary directory.
+        Cannot be used together with logger_config hook.
 
         :arg item: test item for which handlers are to be setup.
 
