@@ -1,3 +1,7 @@
+0.1.5
+-----------------------------------
+- support for python2.6
+
 0.1.4
 -----------------------------------
 - logdirs cmdline/ini option, allowing to set logs directory
