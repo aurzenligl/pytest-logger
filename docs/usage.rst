@@ -53,7 +53,7 @@ High-level hook
         # default --log option is set to log foo at WARN level and bar at NOTSET
         logger_config.set_log_option_default('foo,bar.notset')
 
-- command line option :ref:`-\\\\-log <log option>` is added.
+- command line option :ref:`--log <log option>` is added.
 - see :py:meth:`LoggerHookspec.pytest_logger_config`
 
 .. _`Low-level hooks`:
@@ -100,7 +100,7 @@ Directory with logfiles is located
                 (...)
 
 or
-     - under predefined location, if `-\\-logger-logsdir` option or `logger_logsdir` entry in configuration file defined
+     - under predefined location, if `--logger-logsdir` option or `logger_logsdir` entry in configuration file defined
 
 ::
 
@@ -194,12 +194,12 @@ API reference
 Command line options
 ---------------------------------------
 
-`-\\-logger-logsdir=<logsdir>`
+`--logger-logsdir=<logsdir>`
     where <logsdir> is root directory where log files are created
 
 .. _`log option`:
 
-`-\\-log=<loggers>`
+`--log=<loggers>`
     where <loggers> are a comma delimited list of loggers optionally suffixed
     with level preceded by a dot. Levels can be lower or uppercase, or numeric.
     For example: "logger1,logger2.info,logger3.FATAL,logger4.25"
