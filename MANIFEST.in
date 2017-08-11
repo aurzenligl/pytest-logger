@@ -10,6 +10,7 @@ include init-tox-env
 
 recursive-include docs *.py
 recursive-include docs *.rst
+recursive-include docs *.conf
 recursive-include docs Makefile
 recursive-include docs *.bat
 recursive-include tests *.py
