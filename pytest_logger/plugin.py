@@ -320,14 +320,17 @@ def _log_option_parser(loggers):
         def to_out(elem):
             def find_row(name):
                 return next((row for row in loggers if name in row[0]), None)
+
             def bad_logger(name):
                 names = [x for row in loggers for x in row[0]]
                 pretty_names = '(' + ', '.join(names) + ')'
                 raise argparse.ArgumentTypeError(
                     'wrong logger, expected %s, got "%s"' % (pretty_names, name))
+
             def bad_level(level):
                 raise argparse.ArgumentTypeError(
                     'wrong level, expected (INFO, warn, 15, ...), got "%s"' % level)
+
             row = find_row(elem)
             if row:
                 return elem, row[1]
@@ -354,8 +357,10 @@ def _loggers_from_logcfg(logcfg, logopt):
             else:
                 return one
         return [one(loggers, x) for x in opt]
+
     def to_file(loggers):
         return [(name, row[2]) for row in loggers for name in row[0]]
+
     return Loggers(
         stdout=to_stdout(logcfg._loggers, logopt),
         file_=to_file(logcfg._loggers)

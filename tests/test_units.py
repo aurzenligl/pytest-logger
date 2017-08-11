@@ -3,11 +3,16 @@ import argparse
 import pytest
 import pytest_logger.plugin as plugin
 
+
 def test_sanitize_nodeid():
     assert plugin._sanitize_nodeid('test_p.py::test_echo') == 'test_p.py/test_echo'
-    assert plugin._sanitize_nodeid('classtests/test_y.py::TestClass::()::test_class') == 'classtests/test_y.py/TestClass.test_class'
-    assert plugin._sanitize_nodeid('parametrictests/test_z.py::test_param[2-abc]') == 'parametrictests/test_z.py/test_param-2-abc'
-    assert plugin._sanitize_nodeid('parametrictests/test_z.py::test_param[4.127-de]') == 'parametrictests/test_z.py/test_param-4.127-de'
+    assert plugin._sanitize_nodeid('classtests/test_y.py::TestClass::()::test_class') == \
+        'classtests/test_y.py/TestClass.test_class'
+    assert plugin._sanitize_nodeid('parametrictests/test_z.py::test_param[2-abc]') == \
+        'parametrictests/test_z.py/test_param-2-abc'
+    assert plugin._sanitize_nodeid('parametrictests/test_z.py::test_param[4.127-de]') == \
+        'parametrictests/test_z.py/test_param-4.127-de'
+
 
 def test_sanitize_level():
     assert plugin._sanitize_level(logging.INFO) == logging.INFO
@@ -22,7 +27,8 @@ def test_sanitize_level():
     with pytest.raises(TypeError):
         plugin._sanitize_level(1.0)
 
-    assert plugin._sanitize_level('WARN ', raises=False) == None
+    assert plugin._sanitize_level('WARN ', raises=False) is None
+
 
 def test_log_option_parser():
     loggers = [
@@ -52,6 +58,7 @@ def test_log_option_parser():
         plugin._log_option_parser(loggers)('alien.unknown')
     assert str(e.value) == 'wrong logger, expected (a, b, c, d, e, f.g.h), got "alien.unknown"'
 
+
 def test_loggers_from_logcfg_empty():
     logcfg = plugin.LoggerConfig()
 
@@ -59,6 +66,7 @@ def test_loggers_from_logcfg_empty():
     assert loggers.stdout == []
     assert loggers.file == []
     assert not loggers
+
 
 def test_loggers_from_logcfg():
     logcfg = plugin.LoggerConfig()

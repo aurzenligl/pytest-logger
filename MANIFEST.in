@@ -6,6 +6,7 @@ include CHANGELOG
 include *.yml
 include .bumpversion.cfg
 include tox.ini
+include init-tox-env
 
 recursive-include docs *.py
 recursive-include docs *.rst
