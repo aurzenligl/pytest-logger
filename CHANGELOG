@@ -1,3 +1,8 @@
+0.2.0
+-----------------------------------
+- new hook pytest_logger_config allows for terse logging configuration and adds cmdline option --log
+  compatibility with previous hook api fully retained
+
 0.1.5
 -----------------------------------
 - support for python2.6

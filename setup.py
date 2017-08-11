@@ -13,7 +13,7 @@ def read(fname):
 
 setup(
     name='pytest-logger',
-    version='0.1.5',
+    version='0.2.0',
     author='Krzysztof Laskowski',
     author_email='krzysztof.laskowski@nokia.com',
     maintainer='Krzysztof Laskowski',
