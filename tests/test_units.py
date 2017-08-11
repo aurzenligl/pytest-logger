@@ -44,13 +44,13 @@ def test_log_option_parser():
 
     with pytest.raises(argparse.ArgumentTypeError) as e:
         plugin._log_option_parser(loggers)('a.unknown')
-    assert e.value.message == 'wrong level, expected (INFO, warn, 15, ...), got "unknown"'
+    assert str(e.value) == 'wrong level, expected (INFO, warn, 15, ...), got "unknown"'
     with pytest.raises(argparse.ArgumentTypeError) as e:
         plugin._log_option_parser(loggers)('alien.info')
-    assert e.value.message == 'wrong logger, expected (a, b, c, d, e, f.g.h), got "alien"'
+    assert str(e.value) == 'wrong logger, expected (a, b, c, d, e, f.g.h), got "alien"'
     with pytest.raises(argparse.ArgumentTypeError) as e:
         plugin._log_option_parser(loggers)('alien.unknown')
-    assert e.value.message == 'wrong logger, expected (a, b, c, d, e, f.g.h), got "alien.unknown"'
+    assert str(e.value) == 'wrong logger, expected (a, b, c, d, e, f.g.h), got "alien.unknown"'
 
 def test_loggers_from_logcfg_empty():
     logcfg = plugin.LoggerConfig()

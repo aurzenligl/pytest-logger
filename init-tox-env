@@ -4,5 +4,6 @@
 # Script should be used as '. init-tox-env'.
 
 projectdir=`dirname $0`
-tox -e py27-pytest30 --notest && source ${projectdir}/.tox/py27-pytest30/bin/activate && cd ${projectdir}/tests
+envname=py27-pytest31
+tox -e ${envname} --notest && source ${projectdir}/.tox/${envname}/bin/activate && cd ${projectdir}/tests
 

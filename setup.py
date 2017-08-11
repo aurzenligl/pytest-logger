@@ -23,7 +23,7 @@ setup(
     description='Plugin configuring handlers for loggers from Python logging module.',
     long_description=read('README.rst'),
     packages=['pytest_logger'],
-    install_requires=['pytest>=2.9'],
+    install_requires=['pytest>=2.9', 'future'],
     keywords='py.test pytest logging',
     classifiers=[
         'Development Status :: 4 - Beta',

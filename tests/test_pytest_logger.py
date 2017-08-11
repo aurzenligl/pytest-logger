@@ -576,7 +576,7 @@ def test_logger_config_option_missing_without_hook(testdir, test_case_py, with_h
 
     if with_hook:
         result.stderr.fnmatch_lines([
-            'ArgumentError: argument --log: conflicting option string(s): --log',
+            '*ArgumentError: argument --log: conflicting option string*: --log',
         ])
 
 

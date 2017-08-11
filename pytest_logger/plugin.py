@@ -7,14 +7,8 @@ import logging
 import time
 import datetime
 import argparse
-
-PY2 = sys.version_info[0] == 2
-
-if PY2:
-    string_type = basestring
-else:
-    string_type = str
-int_types = (int, long)
+from builtins import object, int
+from past.builtins import basestring
 
 
 def pytest_addhooks(pluginmanager):
@@ -149,7 +143,7 @@ class Loggers(object):
         self.stdout = stdout
         self.file = file_
 
-    def __nonzero__(self):
+    def __bool__(self):
         return bool(self.stdout) or bool(self.file)
 
 
@@ -264,14 +258,14 @@ def _sanitize_nodeid(filename):
 
 
 def _sanitize_level(level, raises=True):
-    if isinstance(level, string_type):
+    if isinstance(level, basestring):
         try:
             return int(level)
         except ValueError:
             int_level = getattr(logging, level.upper(), None)
             if int_level is not None:
                 return int_level
-    elif isinstance(level, int_types):
+    elif isinstance(level, int):
         return level
     if raises:
         raise TypeError('bad logging level, expected int or string, got "%s"' % level)
@@ -355,7 +349,7 @@ def _log_option_parser(loggers):
 def _loggers_from_logcfg(logcfg, logopt):
     def to_stdout(loggers, opt):
         def one(loggers, one):
-            if isinstance(one, string_type):
+            if isinstance(one, basestring):
                 return one, next(row for row in loggers if one in row[0])[1]
             else:
                 return one
@@ -371,7 +365,7 @@ def _loggers_from_logcfg(logcfg, logopt):
 def _loggers_from_hooks(item):
     def to_loggers(configs_lists):
         def to_logger_and_level(cfg):
-            if isinstance(cfg, string_type):
+            if isinstance(cfg, basestring):
                 name, level = cfg, logging.NOTSET
             else:
                 name, level = cfg
