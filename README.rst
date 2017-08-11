@@ -28,16 +28,14 @@ Plugin puts logs on per-logger basis to:
 - standard output,
 - files within log-specific directory under pytest's ``tmpdir_factory`` session directory.
 
-You can setup plugin using hooks::
+You can setup plugin using hook::
 
     #conftest.py
     import os
 
-    def pytest_logger_stdoutloggers(item):
-        return ['foo', 'bar']
-
-    def pytest_logger_fileloggers(item):
-        return ['foo', 'bar']
+    def pytest_logger_config(logger_config):
+        logger_config.add_loggers(['foo', 'bar', 'baz'], stdout_level='info')
+        logger_config.set_log_option_default('foo,bar')
 
     def pytest_logger_logdirlink(config):
         return os.path.join(os.path.dirname(__file__), 'mylogs')
@@ -49,50 +47,61 @@ have logging tests or libraries (including fixtures)::
     import logging
 
     foo = logging.getLogger('foo')
-    foo.setLevel(logging.INFO)
-
     bar = logging.getLogger('bar')
+    baz = logging.getLogger('baz')
 
     @pytest.yield_fixture(scope='session')
     def session_thing():
-        foo.info('constructing session thing')
+        foo.debug('constructing session thing')
         yield
-        foo.info('destroying session thing')
+        foo.debug('destroying session thing')
 
     @pytest.yield_fixture
     def testcase_thing():
-        foo.info('constructing testcase thing')
+        foo.debug('constructing testcase thing')
         yield
-        foo.info('destroying testcase thing')
+        foo.debug('destroying testcase thing')
 
     def test_one(session_thing, testcase_thing):
         foo.info('one executes')
         bar.warning('this test does nothing aside from logging')
+        baz.info('extra log, rarely read')
 
     def test_two(session_thing, testcase_thing):
         foo.info('two executes')
         bar.warning('neither does this')
+        baz.info('extra log, not enabled by default')
 
 and expect output in terminal (if not captured)::
 
     $ py.test -s -v
     (...)
     test_something.py::test_one
-    00:00.001 inf foo: constructing session thing
-    00:00.001 inf foo: constructing testcase thing
     00:00.002 inf foo: one executes
     00:00.002 wrn bar: this test does nothing aside from logging
     PASSED
-    00:00.002 inf foo: destroying testcase thing
 
     test_something.py::test_two
-    00:00.000 inf foo: constructing testcase thing
     00:00.000 inf foo: two executes
     00:00.000 wrn bar: neither does this
     PASSED
-    00:00.001 inf foo: destroying testcase thing
-    00:00.001 inf foo: destroying session thing
+
+being able to change this output by cmdline option::
+
+    $ pytest -s -v --log foo.debug,baz
     (...)
+    test_something.py::test_one
+    00:00.002 dbg foo: constructing session thing
+    00:00.002 dbg foo: constructing testcase thing
+    00:00.002 inf foo: one executes
+    00:00.003 inf baz: extra log, rarely read
+    PASSED
+
+    test_something.py::test_two
+    00:00.000 dbg foo: constructing testcase thing
+    00:00.000 inf foo: two executes
+    00:00.001 inf baz: extra log, not enabled by default
+    PASSED
 
 and - the same - in filesystem::
 
@@ -104,9 +113,11 @@ and - the same - in filesystem::
     `-- test_something.py
         |-- test_one
         |   |-- bar
+        |   |-- baz
         |   `-- foo
         `-- test_two
             |-- bar
+            |-- baz
             `-- foo
 
 Distributed under the terms of the ``MIT`` license, pytest-logger is free and open source software.
