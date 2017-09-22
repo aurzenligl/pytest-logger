@@ -361,6 +361,8 @@ def _loggers_from_logcfg(logcfg, logopt):
     def to_file(loggers):
         return [(name, row[2]) for row in loggers for name in row[0]]
 
+    if isinstance(logopt, basestring):
+        return Loggers([], [])
     return Loggers(
         stdout=to_stdout(logcfg._loggers, logopt),
         file_=to_file(logcfg._loggers)

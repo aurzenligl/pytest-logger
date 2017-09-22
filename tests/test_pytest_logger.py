@@ -598,3 +598,22 @@ def test_error_both_hook_apis_used(testdir, test_case_py, stdout_hook, config_ho
         result.stdout.fnmatch_lines([
             '*AssertionError: pytest_logger_config and pytest_logger_*loggers hooks used at the same time',
         ])
+
+
+def test_help_prints(testdir, test_case_py):
+    """
+    Pytest doesn't evaluate group.addoption(..., type=...) option when run with --help option.
+    This causes log option string to remain as unchecked string instead of a list in expected format.
+    This happens regardless of --log option source (default, cmdline, etc.),
+
+    To remedy this hack checking whether option has been parsed was made.
+    This test ensures that it keeps working.
+    """
+    makefile(testdir, ['conftest.py'], ("""
+        def pytest_logger_config(logger_config):
+            logger_config.add_loggers(['foo'])
+            logger_config.set_log_option_default('foo')
+    """))
+
+    result = testdir.runpytest('-s', '--help')
+    assert result.ret == 0
