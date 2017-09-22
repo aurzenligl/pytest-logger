@@ -1,3 +1,7 @@
+0.2.1
+-----------------------------------
+- pytest help bug fixed: help prints properly when pytest_logger_config hook is used in test suite
+
 0.2.0
 -----------------------------------
 - new hook pytest_logger_config allows for terse logging configuration and adds cmdline option --log
