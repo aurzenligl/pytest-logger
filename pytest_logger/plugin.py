@@ -60,6 +60,7 @@ class LoggerPlugin(object):
         self._config = config
         self._logdirlinks = config.hook.pytest_logger_logdirlink(config=config)
         self._loggers = _loggers_from_logcfg(logcfg, config.getoption('log')) if logcfg._enabled else None
+        self._formatter = logcfg._formatter if isinstance(logcfg._formatter, logging.Formatter) else DefaultFormatter()
         self._logsdir = None
 
     def logsdir(self):
@@ -85,7 +86,8 @@ class LoggerPlugin(object):
         loggers = _choose_loggers(self._loggers, _loggers_from_hooks(item))
         item._logger = state = LoggerState(item=item,
                                            stdoutloggers=loggers.stdout,
-                                           fileloggers=loggers.file)
+                                           fileloggers=loggers.file,
+                                           formatter=self._formatter)
         state.on_setup()
 
     def pytest_runtest_teardown(self, item, nextitem):
@@ -101,9 +103,11 @@ class LoggerPlugin(object):
 
 
 class LoggerState(object):
-    def __init__(self, item, stdoutloggers, fileloggers):
+    def __init__(self, item, stdoutloggers, fileloggers, formatter=None):
+        if formatter is None or not isinstance(formatter, logging.Formatter):
+            formatter = DefaultFormatter()
         self._put_newlines = bool(item.config.option.capture == 'no' and stdoutloggers)
-        self.handlers = _make_handlers(stdoutloggers, fileloggers, item)
+        self.handlers = _make_handlers(stdoutloggers, fileloggers, item, formatter=formatter)
         self.root_enabler = RootEnabler(bool(stdoutloggers and fileloggers))
 
     def put_newline(self):
@@ -153,6 +157,7 @@ class LoggerConfig(object):
     def __init__(self):
         self._enabled = False
         self._loggers = []
+        self._formatter = None
         self._log_option_default = ''
 
     def add_loggers(self, loggers, stdout_level=logging.NOTSET, file_level=logging.NOTSET):
@@ -173,6 +178,14 @@ class LoggerConfig(object):
         """
         self._enabled = True
         self._loggers.append((loggers, _sanitize_level(stdout_level), _sanitize_level(file_level)))
+
+    def set_formatter(self, formatter):
+        """Sets the `logging.Formatter` to be used by all loggers.
+
+        :arg formatter: The `logging.Formatter` object
+        """
+        if isinstance(formatter, logging.Formatter):
+            self._formatter = formatter
 
     def set_log_option_default(self, value):
         """ Sets default value of `log` option."""
@@ -221,7 +234,7 @@ class LoggerHookspec(object):
         """
 
 
-class Formatter(logging.Formatter):
+class DefaultFormatter(logging.Formatter):
     short_level_names = {
         logging.FATAL: 'ftl',
         logging.ERROR: 'err',
@@ -230,7 +243,7 @@ class Formatter(logging.Formatter):
         logging.DEBUG: 'dbg',
     }
 
-    def __init__(self, fmt):
+    def __init__(self, fmt='%(asctime)s %(levelshortname)s %(name)s: %(message)s'):
         logging.Formatter.__init__(self, fmt)
         self._start = time.time()
 
@@ -240,8 +253,8 @@ class Formatter(logging.Formatter):
         return dt.strftime("%M:%S.%f")[:-3]  # omit useconds, leave mseconds
 
     def format(self, record):
-        record.levelshortname = Formatter.short_level_names.get(record.levelno,
-                                                                'l%s' % record.levelno)
+        record.levelshortname = DefaultFormatter.short_level_names.get(record.levelno,
+                                                                       'l%s' % record.levelno)
         return logging.Formatter.format(self, record)
 
 
@@ -390,15 +403,15 @@ def _choose_loggers(config_loggers, hook_loggers):
     return config_loggers or hook_loggers
 
 
-def _make_handlers(stdoutloggers, fileloggers, item):
-    FORMAT = '%(asctime)s %(levelshortname)s %(name)s: %(message)s'
-    fmt = Formatter(fmt=FORMAT)
+def _make_handlers(stdoutloggers, fileloggers, item, formatter=None):
+    if formatter is None or not isinstance(formatter, logging.Formatter):
+        formatter = DefaultFormatter()
     handlers = []
     if stdoutloggers:
-        handlers += _make_stdout_handlers(stdoutloggers, fmt)
+        handlers += _make_stdout_handlers(stdoutloggers, formatter)
     if fileloggers:
         logdir = _make_logdir(item)
-        handlers += _make_file_handlers(fileloggers, fmt, logdir)
+        handlers += _make_file_handlers(fileloggers, formatter, logdir)
     return handlers
 
 
