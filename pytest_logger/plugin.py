@@ -60,7 +60,7 @@ class LoggerPlugin(object):
         self._config = config
         self._logdirlinks = config.hook.pytest_logger_logdirlink(config=config)
         self._loggers = _loggers_from_logcfg(logcfg, config.getoption('log')) if logcfg._enabled else None
-        self._formatter = logcfg._formatter if isinstance(logcfg._formatter, logging.Formatter) else DefaultFormatter()
+        self._formatter_class = logcfg._formatter_class or DefaultFormatter
         self._logsdir = None
 
     def logsdir(self):
@@ -84,10 +84,11 @@ class LoggerPlugin(object):
 
     def pytest_runtest_setup(self, item):
         loggers = _choose_loggers(self._loggers, _loggers_from_hooks(item))
+        formatter = self._formatter_class()
         item._logger = state = LoggerState(item=item,
                                            stdoutloggers=loggers.stdout,
                                            fileloggers=loggers.file,
-                                           formatter=self._formatter)
+                                           formatter=formatter)
         state.on_setup()
 
     def pytest_runtest_teardown(self, item, nextitem):
@@ -103,11 +104,9 @@ class LoggerPlugin(object):
 
 
 class LoggerState(object):
-    def __init__(self, item, stdoutloggers, fileloggers, formatter=None):
-        if formatter is None or not isinstance(formatter, logging.Formatter):
-            formatter = DefaultFormatter()
+    def __init__(self, item, stdoutloggers, fileloggers, formatter):
         self._put_newlines = bool(item.config.option.capture == 'no' and stdoutloggers)
-        self.handlers = _make_handlers(stdoutloggers, fileloggers, item, formatter=formatter)
+        self.handlers = _make_handlers(stdoutloggers, fileloggers, item, formatter)
         self.root_enabler = RootEnabler(bool(stdoutloggers and fileloggers))
 
     def put_newline(self):
@@ -157,7 +156,7 @@ class LoggerConfig(object):
     def __init__(self):
         self._enabled = False
         self._loggers = []
-        self._formatter = None
+        self._formatter_class = None
         self._log_option_default = ''
 
     def add_loggers(self, loggers, stdout_level=logging.NOTSET, file_level=logging.NOTSET):
@@ -179,13 +178,16 @@ class LoggerConfig(object):
         self._enabled = True
         self._loggers.append((loggers, _sanitize_level(stdout_level), _sanitize_level(file_level)))
 
-    def set_formatter(self, formatter):
-        """Sets the `logging.Formatter` to be used by all loggers.
+    def set_formatter_class(self, formatter_class):
+        """Sets the `logging.Formatter` class to be used by all loggers.
 
-        :arg formatter: The `logging.Formatter` object
+        :arg formatter_class: The `logging.Formatter` class
         """
-        if isinstance(formatter, logging.Formatter):
-            self._formatter = formatter
+        if isinstance(formatter_class, logging.Formatter):
+            raise ValueError("Got a formatter instance instead of its class !")
+        if not issubclass(formatter_class, logging.Formatter):
+            raise ValueError("Formatter should be a class inheriting from logging.Formatter")
+        self._formatter_class = formatter_class
 
     def set_log_option_default(self, value):
         """ Sets default value of `log` option."""
@@ -243,8 +245,10 @@ class DefaultFormatter(logging.Formatter):
         logging.DEBUG: 'dbg',
     }
 
-    def __init__(self, fmt='%(asctime)s %(levelshortname)s %(name)s: %(message)s'):
-        logging.Formatter.__init__(self, fmt)
+    format_string = '%(asctime)s %(levelshortname)s %(name)s: %(message)s'
+
+    def __init__(self):
+        logging.Formatter.__init__(self, DefaultFormatter.format_string)
         self._start = time.time()
 
     def formatTime(self, record, datefmt=None):
@@ -403,9 +407,7 @@ def _choose_loggers(config_loggers, hook_loggers):
     return config_loggers or hook_loggers
 
 
-def _make_handlers(stdoutloggers, fileloggers, item, formatter=None):
-    if formatter is None or not isinstance(formatter, logging.Formatter):
-        formatter = DefaultFormatter()
+def _make_handlers(stdoutloggers, fileloggers, item, formatter):
     handlers = []
     if stdoutloggers:
         handlers += _make_stdout_handlers(stdoutloggers, formatter)
