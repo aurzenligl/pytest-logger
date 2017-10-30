@@ -59,6 +59,23 @@ def test_log_option_parser():
     assert str(e.value) == 'wrong logger, expected (a, b, c, d, e, f.g.h), got "alien.unknown"'
 
 
+def test_set_formatter_class():
+    logcfg = plugin.LoggerConfig()
+
+    logcfg.set_formatter_class(logging.Formatter)
+    logcfg.set_formatter_class(plugin.DefaultFormatter)
+
+    with pytest.raises(ValueError) as e:
+        logcfg.set_formatter_class(plugin.DefaultFormatter())
+    assert str(e.value) == 'Got a formatter instance instead of its class !'
+    with pytest.raises(ValueError) as e:
+        logcfg.set_formatter_class(plugin.LoggerState)
+    assert str(e.value) == 'Formatter should be a class inheriting from logging.Formatter'
+    with pytest.raises(TypeError) as e:
+        logcfg.set_formatter_class(10)
+    assert str(e.value) == 'issubclass() arg 1 must be a class'
+
+
 def test_loggers_from_logcfg_empty():
     logcfg = plugin.LoggerConfig()
 

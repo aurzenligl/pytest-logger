@@ -185,6 +185,7 @@ class LoggerConfig(object):
         """
         if isinstance(formatter_class, logging.Formatter):
             raise ValueError("Got a formatter instance instead of its class !")
+
         if not issubclass(formatter_class, logging.Formatter):
             raise ValueError("Formatter should be a class inheriting from logging.Formatter")
         self._formatter_class = formatter_class
