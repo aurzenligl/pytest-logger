@@ -564,7 +564,7 @@ def test_logger_config_option(testdir, test_case_py, log_option):
 def test_logger_config_formatter(testdir, test_case_py, log_option):
     makefile(testdir, ['conftest.py'], """
         import logging
-    
+
         def pytest_logger_config(logger_config):
             logger_config.add_loggers(['foo', 'bar'])
             logger_config.add_loggers(['baz'], file_level='error')
