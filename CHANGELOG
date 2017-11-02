@@ -1,6 +1,7 @@
 0.3.0
 -----------------------------------
 - LoggerConfig has a new set_formatter_class method to pass a logging.Formatter subclass
+- python2.6 support dropped
 
 0.2.1
 -----------------------------------
