@@ -5,7 +5,6 @@ cache:
 environment:
   matrix:
     - TOXENV: check
-    - TOXENV: 'py26-pytest30,py26-pytest31'
     - TOXENV: 'py27-pytest30,py27-pytest31'
     - TOXENV: 'py35-pytest30,py35-pytest31'
     - TOXENV: 'py36-pytest30,py36-pytest31'
