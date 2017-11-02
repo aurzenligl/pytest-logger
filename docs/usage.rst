@@ -55,6 +55,7 @@ High-level hook
 
 - command line option :ref:`--log <log option>` is added.
 - see :py:meth:`LoggerHookspec.pytest_logger_config`
+- note that :py:meth:`LoggerConfig.set_formatter_class` can be used to set a custom :py:class:`logging.Formatter` class
 
 .. _`Low-level hooks`:
 
@@ -180,7 +181,8 @@ API reference
 
 .. autoclass:: LoggerConfig()
     :members: add_loggers,
-              set_log_option_default
+              set_log_option_default,
+              set_formatter_class
 
 .. _`conftest.py`: http://docs.pytest.org/en/latest/writing_plugins.html#conftest-py
 .. _`unwanted message`: https://docs.python.org/2/howto/logging.html#what-happens-if-no-configuration-is-provided

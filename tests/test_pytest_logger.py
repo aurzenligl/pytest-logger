@@ -560,6 +560,40 @@ def test_logger_config_option(testdir, test_case_py, log_option):
         ])
 
 
+@pytest.mark.parametrize('log_option', ('', '--log=foo.info,baz'))
+def test_logger_config_formatter(testdir, test_case_py, log_option):
+    makefile(testdir, ['conftest.py'], """
+        import logging
+
+        def pytest_logger_config(logger_config):
+            logger_config.add_loggers(['foo', 'bar'])
+            logger_config.add_loggers(['baz'], file_level='error')
+            logger_config.set_formatter_class(logging.Formatter)
+    """)
+
+    opts = ('-s', log_option) if log_option else ('-s',)
+    result = testdir.runpytest(*opts)
+    assert result.ret == 0
+
+    if log_option:
+        result.stdout.fnmatch_lines([
+            '',
+            'test_case.py ',
+            'this is error',
+            'this is warning',
+            'this is info',
+            'this is error',
+            '.',
+            '',
+        ])
+    else:
+        result.stdout.fnmatch_lines([
+            '',
+            'test_case.py .',
+            '',
+        ])
+
+
 @pytest.mark.parametrize('with_hook', (False, True))
 def test_logger_config_option_missing_without_hook(testdir, test_case_py, with_hook):
     makefile(testdir, ['conftest.py'], """
