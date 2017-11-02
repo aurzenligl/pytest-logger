@@ -614,8 +614,8 @@ def test_logger_config_option_missing_without_hook(testdir, test_case_py, with_h
         ])
 
 
-@pytest.mark.parametrize('stdout_hook', [(False, True)])
-@pytest.mark.parametrize('config_hook', [(False, True)])
+@pytest.mark.parametrize('stdout_hook', (False, True))
+@pytest.mark.parametrize('config_hook', (False, True))
 def test_error_both_hook_apis_used(testdir, test_case_py, stdout_hook, config_hook):
     makefile(testdir, ['conftest.py'], ("""
         def pytest_logger_stdoutloggers(item):

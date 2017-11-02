@@ -28,9 +28,10 @@ def _late_addoptions(parser, logcfg):
                          'directory under session tmpdir')
 
     if logcfg._enabled:
+        parser = _log_option_parser(logcfg._loggers)
         group.addoption('--log',
-                        default=logcfg._log_option_default,
-                        type=_log_option_parser(logcfg._loggers),
+                        default=parser(logcfg._log_option_default),
+                        type=parser,
                         metavar='LOGGER,LOGGER.LEVEL,...',
                         help='comma delimited list of loggers optionally suffixed with level '
                              'preceded by a dot. Levels can be lower or uppercase, or numeric. '
@@ -379,8 +380,6 @@ def _loggers_from_logcfg(logcfg, logopt):
     def to_file(loggers):
         return [(name, row[2]) for row in loggers for name in row[0]]
 
-    if isinstance(logopt, basestring):
-        return Loggers([], [])
     return Loggers(
         stdout=to_stdout(logcfg._loggers, logopt),
         file_=to_file(logcfg._loggers)
