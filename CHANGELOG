@@ -3,6 +3,7 @@ upcoming
 - interface-breaking: rename --log to --loggers to maintain operability with newer pytests
 - drop pytest<3.2 from testing
 - add newer pythons and pytests to the testing matrix
+- fix: collect teardown logs
 
 0.3.0
 -----------------------------------

@@ -120,10 +120,10 @@ class LoggerState(object):
         self.root_enabler.enable()
 
     def on_teardown(self):
-        self.root_enabler.disable()
         self.put_newline()
 
     def on_makereport(self):
+        self.root_enabler.disable()
         _disable(self.handlers)
 
 
