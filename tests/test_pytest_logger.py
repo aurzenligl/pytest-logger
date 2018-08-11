@@ -670,3 +670,35 @@ def test_help_prints(testdir, test_case_py):
                   "default mode as well.")
 def test_works_with_progress_percentage_prints():
     assert False
+
+
+def test_collects_teardown_logs(testdir):
+    makefile(testdir, ['conftest.py'], """
+        def pytest_logger_config(logger_config):
+            logger_config.add_loggers(['foo'])
+            logger_config.set_log_option_default('foo')
+    """)
+
+    makefile(testdir, ['test_bar.py'], """
+        import logging
+        import pytest
+        logger = logging.getLogger('foo')
+
+        @pytest.fixture(autouse=True)
+        def fixture_with_teardown_logging():
+            logger.info('setup')
+            yield
+            logger.info('teardown')
+
+        def test_bar():
+            logger.info('test_bar')
+    """)
+
+    result = testdir.runpytest()
+    assert result.ret == 0
+
+    FileLineMatcher(basetemp(testdir), 'logs/test_bar.py/test_bar/foo').fnmatch_lines([
+        '* inf foo: setup',
+        '* inf foo: test_bar',
+        '* inf foo: teardown',
+    ])
