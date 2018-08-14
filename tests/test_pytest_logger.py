@@ -25,7 +25,7 @@ def outdir(testdir, dst):
 
 
 @pytest.fixture(autouse=True)
-def force_classic_output(monkeypatch, testdir):
+def set_classic_output(monkeypatch, testdir):
     runpytest = testdir.runpytest
 
     def wrapper(*args, **kwargs):
@@ -665,7 +665,7 @@ def test_help_prints(testdir, test_case_py):
 
 @pytest.mark.skip("Since pytest v3.3 progress percentage is being displayed by default during test execution. "
                   "It interferes with most of the old test cases that assert stdout/err so to not change them, we are "
-                  "now forcing classic output with a force_classic_output auto-use fixture which overrides pytest's "
+                  "now forcing classic output with a set_classic_output auto-use fixture which overrides pytest's "
                   "console_output_style. We could have at least one test that proves the plugin can work in the new"
                   "default mode as well.")
 def test_works_with_progress_percentage_prints():
