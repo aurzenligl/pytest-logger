@@ -8,6 +8,7 @@ environment:
     - TOXENV: 'py27-pytest3{2,3,4,5,6,7}'
     - TOXENV: 'py35-pytest3{2,3,4,5,6,7}'
     - TOXENV: 'py36-pytest3{2,3,4,5,6,7}'
+    - TOXENV: 'py37-pytest3{2,3,4,5,6,7}'
     - TOXENV: 'pypy-pytest3{2,3,4,5,6,7}'
 init:
   - ps: echo $env:TOXENV
