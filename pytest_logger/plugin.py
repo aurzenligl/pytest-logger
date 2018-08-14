@@ -29,7 +29,7 @@ def _late_addoptions(parser, logcfg):
 
     if logcfg._enabled:
         parser = _log_option_parser(logcfg._loggers)
-        group.addoption('--log',
+        group.addoption('--loggers',
                         default=parser(logcfg._log_option_default),
                         type=parser,
                         metavar='LOGGER,LOGGER.LEVEL,...',
@@ -60,7 +60,7 @@ class LoggerPlugin(object):
     def __init__(self, config, logcfg):
         self._config = config
         self._logdirlinks = config.hook.pytest_logger_logdirlink(config=config)
-        self._loggers = _loggers_from_logcfg(logcfg, config.getoption('log')) if logcfg._enabled else None
+        self._loggers = _loggers_from_logcfg(logcfg, config.getoption('loggers')) if logcfg._enabled else None
         self._formatter_class = logcfg._formatter_class or DefaultFormatter
         self._logsdir = None
 
@@ -163,7 +163,7 @@ class LoggerConfig(object):
     def add_loggers(self, loggers, stdout_level=logging.NOTSET, file_level=logging.NOTSET):
         """Adds loggers for stdout/filesystem handling.
 
-        Stdout: loggers will log to stdout only when mentioned in `log` option. If they're
+        Stdout: loggers will log to stdout only when mentioned in `loggers` option. If they're
         mentioned without explicit level, `stdout_level` will be used.
 
         Filesystem: loggers will log to files at `file_level`.

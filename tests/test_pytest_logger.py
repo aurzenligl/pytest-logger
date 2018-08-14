@@ -24,6 +24,16 @@ def outdir(testdir, dst):
     return testdir.tmpdir.join('..', dst)
 
 
+@pytest.fixture(autouse=True)
+def force_classic_output(monkeypatch, testdir):
+    runpytest = testdir.runpytest
+
+    def wrapper(*args, **kwargs):
+        return runpytest('--override-ini=console_output_style=classic', *args, **kwargs)
+
+    monkeypatch.setattr(testdir, 'runpytest', wrapper)
+
+
 @pytest.fixture
 def conftest_py(testdir):
     filename = 'conftest.py'
@@ -529,7 +539,7 @@ def test_logger_config(testdir, test_case_py):
     ])
 
 
-@pytest.mark.parametrize('log_option', ('', '--log=foo.info,baz'))
+@pytest.mark.parametrize('log_option', ('', '--loggers=foo.info,baz'))
 def test_logger_config_option(testdir, test_case_py, log_option):
     makefile(testdir, ['conftest.py'], """
         def pytest_logger_config(logger_config):
@@ -560,7 +570,7 @@ def test_logger_config_option(testdir, test_case_py, log_option):
         ])
 
 
-@pytest.mark.parametrize('log_option', ('', '--log=foo.info,baz'))
+@pytest.mark.parametrize('log_option', ('', '--loggers=foo.info,baz'))
 def test_logger_config_formatter(testdir, test_case_py, log_option):
     makefile(testdir, ['conftest.py'], """
         import logging
@@ -598,19 +608,19 @@ def test_logger_config_formatter(testdir, test_case_py, log_option):
 def test_logger_config_option_missing_without_hook(testdir, test_case_py, with_hook):
     makefile(testdir, ['conftest.py'], """
         def pytest_addoption(parser):
-            parser.addoption('--log')
-    """ + """
+            parser.addoption('--loggers')
+    """ + ("""
         def pytest_logger_config(logger_config):
             logger_config.add_loggers(['foo', 'bar'], stdout_level='warning', file_level='info')
             logger_config.add_loggers(['baz'], stdout_level='error', file_level='warning')
-    """ if with_hook else "")
+    """ if with_hook else ""))
 
-    result = testdir.runpytest('-s', '--log=foo')
+    result = testdir.runpytest('-s', '--loggers=foo')
     assert result.ret == (3 if with_hook else 0)
 
     if with_hook:
         result.stderr.fnmatch_lines([
-            '*ArgumentError: argument --log: conflicting option string*: --log',
+            '*ArgumentError: argument --loggers: conflicting option string*: --loggers',
         ])
 
 
@@ -638,7 +648,7 @@ def test_help_prints(testdir, test_case_py):
     """
     Pytest doesn't evaluate group.addoption(..., type=...) option when run with --help option.
     This causes log option string to remain as unchecked string instead of a list in expected format.
-    This happens regardless of --log option source (default, cmdline, etc.),
+    This happens regardless of --loggers option source (default, cmdline, etc.),
 
     To remedy this hack checking whether option has been parsed was made.
     This test ensures that it keeps working.
