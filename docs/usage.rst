@@ -47,13 +47,13 @@ High-level hook
     def pytest_logger_config(logger_config):
         # adds two loggers, which will:
         #   - log to filesystem at all levels
-        #   - log to terminal with default WARN level if provided in --log option
+        #   - log to terminal with default WARN level if provided in --loggers option
         logger_config.add_loggers(['foo', 'bar'], stdout_level='warn')
 
-        # default --log option is set to log foo at WARN level and bar at NOTSET
+        # default --loggers option is set to log foo at WARN level and bar at NOTSET
         logger_config.set_log_option_default('foo,bar.notset')
 
-- command line option :ref:`--log <log option>` is added.
+- command line option :ref:`--loggers <loggers option>` is added.
 - see :py:meth:`LoggerHookspec.pytest_logger_config`
 - note that :py:meth:`LoggerConfig.set_formatter_class` can be used to set a custom :py:class:`logging.Formatter` class
 
@@ -199,9 +199,9 @@ Command line options
 `--logger-logsdir=<logsdir>`
     where <logsdir> is root directory where log files are created
 
-.. _`log option`:
+.. _`loggers option`:
 
-`--log=<loggers>`
+`--loggers=<loggers>`
     where <loggers> are a comma delimited list of loggers optionally suffixed
     with level preceded by a dot. Levels can be lower or uppercase, or numeric.
     For example: "logger1,logger2.info,logger3.FATAL,logger4.25"
