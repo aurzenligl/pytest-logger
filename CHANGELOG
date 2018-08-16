@@ -1,4 +1,4 @@
-upcoming
+0.4.0
 -----------------------------------
 - interface-breaking: rename --log to --loggers to maintain operability with newer pytests
 - drop pytest<3.2 from testing
