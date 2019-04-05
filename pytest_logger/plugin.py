@@ -97,9 +97,22 @@ class LoggerPlugin(object):
         if logger:
             logger.on_teardown()
 
+    @pytest.mark.hookwrapper
     def pytest_runtest_makereport(self, item, call):
+        outcome = yield
+        tr = outcome.get_result()
         logger = getattr(item, '_logger', None)
         if logger:
+            if tr.outcome == 'failed':
+                failedlogsdir = self._logsdir.join('failedlogs')
+                failedlogsdir.ensure(dir=1)
+
+                nodeid = _sanitize_nodeid(item.nodeid)
+                nodepath, nodename = os.path.split(nodeid)
+                failedlogsdir.join(nodepath).ensure(dir=1)
+                # depth = nodeid.count(os.pathsep)
+                #os.symlink(os.path.join(*([os.pardir]*depth), nodeid), failedlogsdir.join(nodeid), target_is_directory=True)
+                os.symlink(self._logsdir.join(nodeid), failedlogsdir.join(nodeid), target_is_directory=True)
             if call.when == 'teardown':
                 logger.on_makereport()
 
