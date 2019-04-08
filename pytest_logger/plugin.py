@@ -109,7 +109,7 @@ class LoggerPlugin(object):
                 nodeid = _sanitize_nodeid(item.nodeid)
                 nodepath = os.path.dirname(nodeid)
                 failedlogsdir.join(nodepath).ensure(dir=1)
-                destdir_relpath=os.path.relpath(self._logsdir.join(nodeid), failedlogsdir.join(nodepath))
+                destdir_relpath = os.path.relpath(self._logsdir.join(nodeid), failedlogsdir.join(nodepath))
                 os.symlink(destdir_relpath, failedlogsdir.join(nodeid), target_is_directory=True)
             if call.when == 'teardown':
                 logger.on_makereport()
@@ -211,7 +211,7 @@ class LoggerHookspec(object):
     def pytest_logger_config(self, logger_config):
         """ called before cmdline options parsing. Accepts terse configuration
         of both stdout and file logging, adds cmdline options to manipulate
-        stdout logging. Cannot be used together with \*loggers hooks.
+        stdout logging. Cannot be used together with *loggers hooks.
 
         :arg logger_config: instance of :py:class:`LoggerConfig`, allows
            setting loggers for stdout and file handling and their levels.
