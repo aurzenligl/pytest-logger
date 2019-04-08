@@ -106,13 +106,11 @@ class LoggerPlugin(object):
             if tr.outcome == 'failed':
                 failedlogsdir = self._logsdir.join('failedlogs')
                 failedlogsdir.ensure(dir=1)
-
                 nodeid = _sanitize_nodeid(item.nodeid)
-                nodepath, nodename = os.path.split(nodeid)
+                nodepath = os.path.dirname(nodeid)
                 failedlogsdir.join(nodepath).ensure(dir=1)
-                # depth = nodeid.count(os.pathsep)
-                #os.symlink(os.path.join(*([os.pardir]*depth), nodeid), failedlogsdir.join(nodeid), target_is_directory=True)
-                os.symlink(self._logsdir.join(nodeid), failedlogsdir.join(nodeid), target_is_directory=True)
+                destdir_relpath=os.path.relpath(self._logsdir.join(nodeid), failedlogsdir.join(nodepath))
+                os.symlink(destdir_relpath, failedlogsdir.join(nodeid), target_is_directory=True)
             if call.when == 'teardown':
                 logger.on_makereport()
 
