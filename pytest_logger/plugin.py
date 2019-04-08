@@ -103,7 +103,7 @@ class LoggerPlugin(object):
         tr = outcome.get_result()
         logger = getattr(item, '_logger', None)
         if logger:
-            if tr.outcome == 'failed':
+            if tr.outcome == 'failed' and self._logsdir:
                 failedlogsdir = self._logsdir.join('failedlogs')
                 failedlogsdir.ensure(dir=1)
                 nodeid = _sanitize_nodeid(item.nodeid)
