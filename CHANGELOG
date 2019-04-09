@@ -1,3 +1,7 @@
+0.5.0
+-----------------------------------
+- create a 'failedlogs' directory with symlinks to logs from failed tests inside the main logs directory
+
 0.4.0
 -----------------------------------
 - interface-breaking: rename --log to --loggers to maintain operability with newer pytests
