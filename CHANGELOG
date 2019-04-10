@@ -1,3 +1,8 @@
+next
+-----------------------------------
+- class with testcases is represented with additional directory instead of '.'
+  separating class name and testcase name
+
 0.4.0
 -----------------------------------
 - interface-breaking: rename --log to --loggers to maintain operability with newer pytests

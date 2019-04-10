@@ -113,6 +113,7 @@ It has structure following pytest test item's `nodeid`_.
 
     - test directories are directories
     - test filenames are directories
+    - test classes are directories
     - test functions are directories (each parametrized testcase variant is distinct)
     - each registered logger is a file (root logger is called 'root')
 
@@ -121,9 +122,10 @@ It has structure following pytest test item's `nodeid`_.
     logs/
     ├── classtests
     │   └── test_y.py
-    │       └── TestClass.test_class
-    │           ├── daemon
-    │           └── setup
+    │       └── TestClass
+    │           └── test_class
+    │               ├── daemon
+    │               └── setup
     ├── parametrictests
     │   └── test_z.py
     │       ├── test_param-2-abc

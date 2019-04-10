@@ -200,7 +200,7 @@ class LoggerHookspec(object):
     def pytest_logger_config(self, logger_config):
         """ called before cmdline options parsing. Accepts terse configuration
         of both stdout and file logging, adds cmdline options to manipulate
-        stdout logging. Cannot be used together with \*loggers hooks.
+        stdout logging. Cannot be used together with \\*loggers hooks.
 
         :arg logger_config: instance of :py:class:`LoggerConfig`, allows
            setting loggers for stdout and file handling and their levels.
@@ -270,7 +270,7 @@ def logdir(request):
 
 
 def _sanitize_nodeid(filename):
-    filename = filename.replace('::()::', '.')
+    filename = filename.replace('::()::', '/')
     filename = filename.replace('::', '/')
     filename = re.sub(r'\[(.+)\]', r'-\1', filename)
     return filename
