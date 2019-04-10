@@ -3,7 +3,6 @@
 # Facilitates interactive testing with virtualenv produced by tox.
 # Script should be used as '. init-tox-env'.
 
-projectdir=`dirname $0`
-envname=py27-pytest31
-tox -e ${envname} --notest && source ${projectdir}/.tox/${envname}/bin/activate && cd ${projectdir}/tests
-
+projectdir="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+envname=py35-pytest37
+tox -c ${projectdir} -e ${envname} --notest && source ${projectdir}/.tox/${envname}/bin/activate
