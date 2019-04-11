@@ -81,7 +81,7 @@ def test_logdir_fixture(testdir):
 
         class TestInsideClass(object):
             def test_qez(self, logdir):
-                assert str(logdir).endswith(os.path.join('logs', 'test_foo1.py', 'TestInsideClass.test_qez'))
+                assert str(logdir).endswith(os.path.join('logs', 'test_foo1.py', 'TestInsideClass', 'test_qez'))
 
         import pytest
         @pytest.mark.parametrize('param1,param2', [
@@ -118,10 +118,11 @@ def test_logdir_fixture(testdir):
     assert ls(basetemp(testdir), 'logs/test_foo1.py') == sorted([
         'test_bar',
         'test_baz',
-        'TestInsideClass.test_qez',
+        'TestInsideClass',
         'test_par-abc-de',
         'test_par-2-4.127',
     ])
+    assert ls(basetemp(testdir), 'logs/test_foo1.py/TestInsideClass') == ['test_qez']
 
 
 def test_stdout_handlers(testdir):

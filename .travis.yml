@@ -11,17 +11,17 @@ env:
 matrix:
   include:
     - python: '2.7'
-      env: TOXENV='py27-pytest3{2,3,4,5,6,7}'
+      env: TOXENV='py27-pytest{35,36,37,4}'
     - python: '3.5'
-      env: TOXENV='py35-pytest3{2,3,4,5,6,7}'
+      env: TOXENV='py35-pytest{35,36,37,4}'
     - python: '3.6'
-      env: TOXENV='py36-pytest3{2,3,4,5,6,7}'
+      env: TOXENV='py36-pytest{35,36,37,4}'
     - python: '3.7'
       dist: xenial
       sudo: true
-      env: TOXENV='py37-pytest3{2,3,4,5,6,7}'
+      env: TOXENV='py37-pytest{35,36,37,4}'
     - python: 'pypy-5.4'
-      env: TOXENV='pypy-pytest3{2,3,4,5,6,7}'
+      env: TOXENV='pypy-pytest{35,36,37,4}'
 before_install:
   - python --version
   - uname -a
