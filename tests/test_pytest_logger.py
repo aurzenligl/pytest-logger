@@ -216,8 +216,8 @@ def test_file_handlers(testdir, conftest_py, test_case_py):
     ])
 
 
-@pytest.mark.skipif(sys.version_info.major < 3,
-                    reason="AttributeError: 'LocalPath' object has no attribute 'startswith'")
+@pytest.mark.skipif(sys.version_info < (3, 6, ),
+                    reason="Requires python 3.6+")
 def test_failedlogsdir(testdir, conftest_py):
     makefile(testdir, ['test_case.py'], """
             import pytest

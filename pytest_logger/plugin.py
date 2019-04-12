@@ -103,7 +103,7 @@ class LoggerPlugin(object):
         tr = outcome.get_result()
         logger = getattr(item, '_logger', None)
         if logger:
-            if sys.version_info.major >= 3 and tr.outcome == 'failed' and self._logsdir:
+            if sys.version_info >= (3, 6, ) and tr.outcome == 'failed' and self._logsdir:
                 failedlogsdir = self._logsdir.join('failedlogs')
                 failedlogsdir.ensure(dir=1)
                 nodeid = _sanitize_nodeid(item.nodeid)
