@@ -1,3 +1,4 @@
+import os
 import sys
 import pytest
 import platform
@@ -213,6 +214,33 @@ def test_file_handlers(testdir, conftest_py, test_case_py):
     FileLineMatcher(basetemp(testdir), 'logs/{0}/test_case/bar'.format(test_case_py)).fnmatch_lines([
         '* bar: this is error',
     ])
+
+
+@pytest.mark.skipif(sys.version_info.major < 3,
+                    reason="AttributeError: 'LocalPath' object has no attribute 'startswith'")
+def test_failedlogsdir(testdir, conftest_py):
+    makefile(testdir, ['test_case.py'], """
+            import pytest
+            import logging
+            def test_case_that_fails():
+                for lgr in (logging.getLogger(name) for name in ['foo', 'bar', 'baz']):
+                    lgr.error('this is error')
+                    lgr.warning('this is warning')
+                pytest.fail('just checking')
+        """)
+    result = testdir.runpytest('-s')
+    assert result.ret != 0
+    result.stdout.fnmatch_lines([
+        '',
+        'test_case.py F',
+        '',
+    ])
+
+    assert 'failedlogs' in ls(basetemp(testdir).join('logs'))
+    failedlogpath = basetemp(testdir).join('logs', 'failedlogs', 'test_case.py', 'test_case_that_fails')
+    assert failedlogpath.islink()
+    failedlogdest = os.path.join(os.path.pardir, os.path.pardir, 'test_case.py', 'test_case_that_fails')
+    assert failedlogpath.readlink() == failedlogdest
 
 
 def test_file_handlers_root(testdir):

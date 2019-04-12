@@ -116,7 +116,7 @@ It has structure following pytest test item's `nodeid`_.
     - test classes are directories
     - test functions are directories (each parametrized testcase variant is distinct)
     - each registered logger is a file (root logger is called 'root')
-    - if some test fails, additional directory named `failedlogsdir` is created in top-level logs directory. It wil contain the same exact directory tree as the original one, and a symbolic link at the end (pointing th the original directory with logs from that testcase)
+    - if some test fails, additional directory named `failedlogs` is created in top-level logs directory. It wil contain the same exact directory tree as the original one, and a symbolic link at the end (pointing th the original directory with logs from that testcase)
 
 ::
 
@@ -129,7 +129,7 @@ It has structure following pytest test item's `nodeid`_.
     │           |   └── setup
     |           └── test_that_failed_two
     |               └── somelogfile
-    ├── failedlogsdir
+    ├── failedlogs
     |   ├── classtests
     │   |   └── test_y.py
     │   |       └── TestClass
