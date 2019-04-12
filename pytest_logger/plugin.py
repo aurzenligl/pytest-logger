@@ -10,6 +10,8 @@ import argparse
 from builtins import object, int
 from past.builtins import basestring
 
+win32 = sys.platform == 'win32'
+
 
 def pytest_addhooks(pluginmanager):
     pluginmanager.add_hookspecs(LoggerHookspec)
@@ -103,7 +105,7 @@ class LoggerPlugin(object):
         tr = outcome.get_result()
         logger = getattr(item, '_logger', None)
         if logger:
-            if sys.version_info >= (3, 6, ) and tr.outcome == 'failed' and self._logsdir:
+            if not win32 and sys.version_info >= (3, 6, ) and tr.outcome == 'failed' and self._logsdir:
                 failedlogsdir = self._logsdir.join('failedlogs')
                 failedlogsdir.ensure(dir=1)
                 nodeid = _sanitize_nodeid(item.nodeid)

@@ -5,8 +5,9 @@ import platform
 from py.code import Source
 from _pytest.pytester import LineMatcher
 
-win32py2 = sys.platform == 'win32' and sys.version_info[0] == 2
-win32pypy = sys.platform == 'win32' and platform.python_implementation() == 'PyPy'
+win32 = sys.platform == 'win32'
+win32py2 = win32 and sys.version_info[0] == 2
+win32pypy = win32 and platform.python_implementation() == 'PyPy'
 
 
 def makefile(testdir, path, content):
@@ -216,8 +217,8 @@ def test_file_handlers(testdir, conftest_py, test_case_py):
     ])
 
 
-@pytest.mark.skipif(sys.version_info < (3, 6, ),
-                    reason="Requires python 3.6+")
+@pytest.mark.skipif(sys.version_info < (3, 6, ) or win32,
+                    reason="Requires linux and python 3.6+")
 def test_failedlogsdir(testdir, conftest_py):
     makefile(testdir, ['test_case.py'], """
             import pytest
