@@ -10,8 +10,6 @@ import argparse
 from builtins import object, int
 from past.builtins import basestring
 
-win32 = sys.platform == 'win32'
-
 
 def pytest_addhooks(pluginmanager):
     pluginmanager.add_hookspecs(LoggerHookspec)
@@ -105,14 +103,14 @@ class LoggerPlugin(object):
         tr = outcome.get_result()
         logger = getattr(item, '_logger', None)
         if logger:
-            if not win32 and sys.version_info >= (3, 6, ) and tr.outcome == 'failed' and self._logsdir:
+            if tr.outcome == 'failed' and self._logsdir:
                 failedlogsdir = self._logsdir.join('failedlogs')
                 failedlogsdir.ensure(dir=1)
                 nodeid = _sanitize_nodeid(item.nodeid)
                 nodepath = os.path.dirname(nodeid)
                 failedlogsdir.join(nodepath).ensure(dir=1)
-                destdir_relpath = os.path.relpath(self._logsdir.join(nodeid), failedlogsdir.join(nodepath))
-                os.symlink(destdir_relpath, failedlogsdir.join(nodeid), target_is_directory=True)
+                destdir_relpath = os.path.relpath(str(self._logsdir.join(nodeid)), str(failedlogsdir.join(nodepath)))
+                os.symlink(destdir_relpath, str(failedlogsdir.join(nodeid)))
             if call.when == 'teardown':
                 logger.on_makereport()
 

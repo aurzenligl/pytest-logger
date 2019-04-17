@@ -217,8 +217,7 @@ def test_file_handlers(testdir, conftest_py, test_case_py):
     ])
 
 
-@pytest.mark.skipif(sys.version_info < (3, 6, ) or win32,
-                    reason="Requires linux and python 3.6+")
+@pytest.mark.skipif(win32py2, reason="python 2 on windows doesn't have symlink feature")
 def test_failedlogsdir(testdir, conftest_py):
     makefile(testdir, ['test_case.py'], """
             import pytest
@@ -241,7 +240,7 @@ def test_failedlogsdir(testdir, conftest_py):
     failedlogpath = basetemp(testdir).join('logs', 'failedlogs', 'test_case.py', 'test_case_that_fails')
     assert failedlogpath.islink()
     failedlogdest = os.path.join(os.path.pardir, os.path.pardir, 'test_case.py', 'test_case_that_fails')
-    assert failedlogpath.readlink() == failedlogdest
+    assert os.readlink(str(failedlogpath)) == failedlogdest
 
 
 def test_file_handlers_root(testdir):
