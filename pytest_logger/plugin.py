@@ -110,7 +110,7 @@ class LoggerPlugin(object):
                 nodepath = os.path.dirname(nodeid)
                 failedlogsdir.join(nodepath).ensure(dir=1)
                 destdir_relpath = os.path.relpath(str(self._logsdir.join(nodeid)), str(failedlogsdir.join(nodepath)))
-                os.symlink(destdir_relpath, str(failedlogsdir.join(nodeid)))
+                _refresh_link(destdir_relpath, str(failedlogsdir.join(nodeid)))
             if call.when == 'teardown':
                 logger.on_makereport()
 
