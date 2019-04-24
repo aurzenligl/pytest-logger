@@ -2,7 +2,7 @@ next
 -----------------------------------
 - class with testcases is represented with additional directory instead of '.'
   separating class name and testcase name
-- create a 'failedlogs' directory with symlinks to logs from failed tests inside the main logs directory
+- add the "divide by result" functionality
 
 0.4.0
 -----------------------------------

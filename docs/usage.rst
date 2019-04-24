@@ -116,7 +116,39 @@ It has structure following pytest test item's `nodeid`_.
     - test classes are directories
     - test functions are directories (each parametrized testcase variant is distinct)
     - each registered logger is a file (root logger is called 'root')
-    - if some test fails, additional directory named `failedlogs` is created in top-level logs directory. It wil contain the same exact directory tree as the original one, and a symbolic link at the end (pointing th the original directory with logs from that testcase)
+
+::
+
+    logs/
+    ├── classtests
+    │   └── test_y.py
+    │       └── TestClass
+    │           └── test_class
+    │               ├── daemon
+    │               └── setup
+    ├── parametrictests
+    │   └── test_z.py
+    │       ├── test_param-2-abc
+    │       └── test_param-4.127-de
+    │           └── setup
+    └── test_p.py
+        └── test_cat
+            └── proc
+
+
+.. _`divide logs by result`:
+
+Divide logs by result
+---------------------------------------
+It is possible to divide the logs by test result. If chosen to do so (by calling below method):
+
+::
+
+    # content of conftest.py
+    def pytest_logger_config(logger_config):
+        logger_config.divide_logs_by_result()
+
+Will result in below directory structure:
 
 ::
 
@@ -129,23 +161,21 @@ It has structure following pytest test item's `nodeid`_.
     │           |   └── setup
     |           └── test_that_failed_two
     |               └── somelogfile
-    ├── failedlogs
-    |   ├── classtests
-    │   |   └── test_y.py
-    │   |       └── TestClass
-    |   |           └── test_that_failed_two -> ../../../../../test_that_failed_two
-    |   └── test_p.py
-    |       └── test_that_failed_one -> ../../../test_p.py/test_that_failed_one
-    ├── parametrictests
-    │   └── test_z.py
-    │       ├── test_param-2-abc
-    │       └── test_param-4.127-de
-    │           └── setup
+    ├── div_by_res
+    |   └── failed
+    |       ├── classtests
+    │       |   └── test_y.py
+    │       |       └── TestClass
+    |       |           └── test_that_failed_two -> ../../../../../../classtests/test_y.py/TestClass/test_that_failed_two
+    |       └── test_p.py
+    |           └── test_that_failed_one -> ../../../../test_p.py/test_that_failed_one
     └── test_p.py
         ├── test_cat
         |   └── proc
         └── test_that_failed_one
             └── somelog
+
+You can change the default `div_by_res` dirname to something else, as well as add more "per-result" subdirectories by passing proper arguments to the `divide_logs_by_result` method.
 
 .. _`link to logs dir`:
 
