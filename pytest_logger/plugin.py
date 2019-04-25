@@ -216,7 +216,6 @@ class LoggerConfig(object):
 
         :param div_by_res_logdir: name for the subdirectory in main log directory
         :param div_by_res_subdirs: list of test results to be handled (failed/passed)
-        :return:
         """
         self._div_by_res_logdir = div_by_res_logdir
         self._div_by_res_subdirs = div_by_res_subdirs

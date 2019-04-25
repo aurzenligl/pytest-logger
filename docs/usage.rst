@@ -226,7 +226,8 @@ API reference
 .. autoclass:: LoggerConfig()
     :members: add_loggers,
               set_log_option_default,
-              set_formatter_class
+              set_formatter_class,
+              divide_logs_by_result
 
 .. _`conftest.py`: http://docs.pytest.org/en/latest/writing_plugins.html#conftest-py
 .. _`unwanted message`: https://docs.python.org/2/howto/logging.html#what-happens-if-no-configuration-is-provided
