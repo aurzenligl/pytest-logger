@@ -63,8 +63,8 @@ class LoggerPlugin(object):
         self._loggers = _loggers_from_logcfg(logcfg, config.getoption('loggers')) if logcfg._enabled else None
         self._formatter_class = logcfg._formatter_class or DefaultFormatter
         self._logsdir = None
-        self._div_by_res_logdir = logcfg._div_by_res_logdir
-        self._div_by_res_subdirs = logcfg._div_by_res_subdirs
+        self._split_by_outcome_subdir = logcfg._split_by_outcome_subdir
+        self._split_by_outcome_outcomes = logcfg._split_by_outcome_outcomes
 
     def logsdir(self):
         ldir = self._logsdir
@@ -105,15 +105,14 @@ class LoggerPlugin(object):
         tr = outcome.get_result()
         logger = getattr(item, '_logger', None)
         if logger:
-            if self._logsdir and self._div_by_res_logdir and tr.outcome in self._div_by_res_subdirs:
-                div_by_res_logdir = self._logsdir.join(self._div_by_res_logdir, tr.outcome)
-                div_by_res_logdir.ensure(dir=1)
+            if self._logsdir and self._split_by_outcome_subdir and tr.outcome in self._split_by_outcome_outcomes:
+                split_by_outcome_logdir = self._logsdir.join(self._split_by_outcome_subdir, tr.outcome)
                 nodeid = _sanitize_nodeid(item.nodeid)
                 nodepath = os.path.dirname(nodeid)
-                div_by_res_logdir.join(nodepath).ensure(dir=1)
+                split_by_outcome_logdir.join(nodepath).ensure(dir=1)
                 destdir_relpath = os.path.relpath(str(self._logsdir.join(nodeid)),
-                                                  str(div_by_res_logdir.join(nodepath)))
-                _refresh_link(destdir_relpath, str(div_by_res_logdir.join(nodeid)))
+                                                  str(split_by_outcome_logdir.join(nodepath)))
+                _refresh_link(destdir_relpath, str(split_by_outcome_logdir.join(nodeid)))
             if call.when == 'teardown':
                 logger.on_makereport()
 
@@ -173,8 +172,8 @@ class LoggerConfig(object):
         self._loggers = []
         self._formatter_class = None
         self._log_option_default = ''
-        self._div_by_res_logdir = None
-        self._div_by_res_subdirs = []
+        self._split_by_outcome_subdir = None
+        self._split_by_outcome_outcomes = []
 
     def add_loggers(self, loggers, stdout_level=logging.NOTSET, file_level=logging.NOTSET):
         """Adds loggers for stdout/filesystem handling.
@@ -211,14 +210,22 @@ class LoggerConfig(object):
         """ Sets default value of `log` option."""
         self._log_option_default = value
 
-    def divide_logs_by_result(self, div_by_res_logdir='div_by_res', div_by_res_subdirs=['failed']):
-        """Makes a directory inside main logdir where logs are further divided by test result
+    def split_by_outcome(self, outcomes=None, subdir='by_outcome'):
+        """Makes a directory inside main logdir where logs are further split by test outcome
 
-        :param div_by_res_logdir: name for the subdirectory in main log directory
-        :param div_by_res_subdirs: list of test results to be handled (failed/passed)
+        :param subdir: name for the subdirectory in main log directory
+        :param outcomes: list of test outcomes to be handled (failed/passed/skipped)
         """
-        self._div_by_res_logdir = div_by_res_logdir
-        self._div_by_res_subdirs = div_by_res_subdirs
+        if outcomes is not None:
+            allowed_outcomes = ['passed', 'failed', 'skipped']
+            unexpected_outcomes = set(outcomes) - set(allowed_outcomes)
+            if unexpected_outcomes:
+                raise ValueError('got unexpected_outcomes: <' + str(unexpected_outcomes) + '>')
+            self._split_by_outcome_outcomes = outcomes
+        else:
+            self._split_by_outcome_outcomes = ['failed']
+
+        self._split_by_outcome_subdir = subdir
 
 
 class LoggerHookspec(object):

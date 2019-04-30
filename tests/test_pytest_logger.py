@@ -218,7 +218,7 @@ def test_file_handlers(testdir, conftest_py, test_case_py):
 
 
 @pytest.mark.skipif(win32py2, reason="python 2 on windows doesn't have symlink feature")
-def test_divide_logs_by_result(testdir):
+def test_split_logs_by_outcome(testdir):
     makefile(testdir, ['conftest.py'], """
         import logging
         def pytest_logger_fileloggers(item):
@@ -228,7 +228,7 @@ def test_divide_logs_by_result(testdir):
             ]
 
         def pytest_logger_config(logger_config):
-            logger_config.divide_logs_by_result(div_by_res_subdirs=['passed', 'failed'])
+            logger_config.split_by_outcome(outcomes=['passed', 'failed'])
     """)
     makefile(testdir, ['test_case.py'], """
             import pytest
@@ -252,17 +252,17 @@ def test_divide_logs_by_result(testdir):
         '',
     ])
 
-    assert 'div_by_res' in ls(basetemp(testdir).join('logs'))
+    assert 'by_outcome' in ls(basetemp(testdir).join('logs'))
 
-    assert 'failed' in ls(basetemp(testdir).join('logs', 'div_by_res'))
-    failedlogpath = basetemp(testdir).join('logs', 'div_by_res', 'failed', 'test_case.py', 'test_case_that_fails')
+    assert 'failed' in ls(basetemp(testdir).join('logs', 'by_outcome'))
+    failedlogpath = basetemp(testdir).join('logs', 'by_outcome', 'failed', 'test_case.py', 'test_case_that_fails')
     assert failedlogpath.islink()
     failedlogdest = os.path.join(
         os.path.pardir, os.path.pardir, os.path.pardir, 'test_case.py', 'test_case_that_fails')
     assert os.readlink(str(failedlogpath)) == failedlogdest
 
-    assert 'passed' in ls(basetemp(testdir).join('logs', 'div_by_res'))
-    passedlogpath = basetemp(testdir).join('logs', 'div_by_res', 'passed', 'test_case.py', 'test_case_that_passes')
+    assert 'passed' in ls(basetemp(testdir).join('logs', 'by_outcome'))
+    passedlogpath = basetemp(testdir).join('logs', 'by_outcome', 'passed', 'test_case.py', 'test_case_that_passes')
     assert passedlogpath.islink()
     passedlogdest = os.path.join(
         os.path.pardir, os.path.pardir, os.path.pardir, 'test_case.py', 'test_case_that_passes')

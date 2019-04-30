@@ -136,17 +136,17 @@ It has structure following pytest test item's `nodeid`_.
             └── proc
 
 
-.. _`divide logs by result`:
+.. _`split logs by outcome`:
 
-Divide logs by result
+Split logs by outcome
 ---------------------------------------
-It is possible to divide the logs by test result. If chosen to do so (by calling below method):
+It is possible to split the logs by test outcome. If chosen to do so (by calling below method):
 
 ::
 
     # content of conftest.py
     def pytest_logger_config(logger_config):
-        logger_config.divide_logs_by_result()
+        logger_config.split_by_outcome()
 
 Will result in below directory structure:
 
@@ -161,7 +161,7 @@ Will result in below directory structure:
     │           |   └── setup
     |           └── test_that_failed_two
     |               └── somelogfile
-    ├── div_by_res
+    ├── by_outcome
     |   └── failed
     |       ├── classtests
     │       |   └── test_y.py
@@ -175,7 +175,7 @@ Will result in below directory structure:
         └── test_that_failed_one
             └── somelog
 
-You can change the default `div_by_res` dirname to something else, as well as add more "per-result" subdirectories by passing proper arguments to the `divide_logs_by_result` method.
+You can change the default `by_outcome` dirname to something else, as well as add more "per-outcome" subdirectories by passing proper arguments to the `split_by_outcome` method.
 
 .. _`link to logs dir`:
 
@@ -227,7 +227,7 @@ API reference
     :members: add_loggers,
               set_log_option_default,
               set_formatter_class,
-              divide_logs_by_result
+              split_by_outcome
 
 .. _`conftest.py`: http://docs.pytest.org/en/latest/writing_plugins.html#conftest-py
 .. _`unwanted message`: https://docs.python.org/2/howto/logging.html#what-happens-if-no-configuration-is-provided
