@@ -220,7 +220,7 @@ class LoggerConfig(object):
             allowed_outcomes = ['passed', 'failed', 'skipped']
             unexpected_outcomes = set(outcomes) - set(allowed_outcomes)
             if unexpected_outcomes:
-                raise ValueError('got unexpected_outcomes: <' + str(unexpected_outcomes) + '>')
+                raise ValueError('got unexpected_outcomes: <' + str(list(unexpected_outcomes)) + '>')
             self._split_by_outcome_outcomes = outcomes
         else:
             self._split_by_outcome_outcomes = ['failed']

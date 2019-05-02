@@ -96,3 +96,9 @@ def test_loggers_from_logcfg():
     assert loggers.stdout == [('b', logging.FATAL), ('d', 10)]
     assert loggers.file == [('a', logging.WARN), ('b', logging.WARN), ('c', logging.WARN), ('d', 0)]
     assert loggers
+
+
+def test_split_by_outcome_wrong_config():
+    logcfg = plugin.LoggerConfig()
+    with pytest.raises(ValueError, match="got unexpected_outcomes: <\\['sthelese'\\]>"):
+        logcfg.split_by_outcome(outcomes=['failed', 'sthelese'])
