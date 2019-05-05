@@ -1,11 +1,13 @@
+import os
 import sys
 import pytest
 import platform
 from py.code import Source
 from _pytest.pytester import LineMatcher
 
-win32py2 = sys.platform == 'win32' and sys.version_info[0] == 2
-win32pypy = sys.platform == 'win32' and platform.python_implementation() == 'PyPy'
+win32 = sys.platform == 'win32'
+win32py2 = win32 and sys.version_info[0] == 2
+win32pypy = win32 and platform.python_implementation() == 'PyPy'
 
 
 def makefile(testdir, path, content):
@@ -213,6 +215,58 @@ def test_file_handlers(testdir, conftest_py, test_case_py):
     FileLineMatcher(basetemp(testdir), 'logs/{0}/test_case/bar'.format(test_case_py)).fnmatch_lines([
         '* bar: this is error',
     ])
+
+
+@pytest.mark.skipif(win32py2, reason="python 2 on windows doesn't have symlink feature")
+def test_split_logs_by_outcome(testdir):
+    makefile(testdir, ['conftest.py'], """
+        import logging
+        def pytest_logger_fileloggers(item):
+            return [
+                'foo',
+                ('bar', logging.ERROR),
+            ]
+
+        def pytest_logger_config(logger_config):
+            logger_config.split_by_outcome(outcomes=['passed', 'failed'])
+    """)
+    makefile(testdir, ['test_case.py'], """
+            import pytest
+            import logging
+            def test_case_that_fails():
+                for lgr in (logging.getLogger(name) for name in ['foo', 'bar', 'baz']):
+                    lgr.error('this is error')
+                    lgr.warning('this is warning')
+                pytest.fail('just checking')
+
+            def test_case_that_passes():
+                for lgr in (logging.getLogger(name) for name in ['foo', 'bar', 'baz']):
+                    lgr.error('this is error')
+                    lgr.warning('this is warning')
+        """)
+    result = testdir.runpytest('-s')
+    assert result.ret != 0
+    result.stdout.fnmatch_lines([
+        '',
+        'test_case.py F.',
+        '',
+    ])
+
+    assert 'by_outcome' in ls(basetemp(testdir).join('logs'))
+
+    assert 'failed' in ls(basetemp(testdir).join('logs', 'by_outcome'))
+    failedlogpath = basetemp(testdir).join('logs', 'by_outcome', 'failed', 'test_case.py', 'test_case_that_fails')
+    assert failedlogpath.islink()
+    failedlogdest = os.path.join(
+        os.path.pardir, os.path.pardir, os.path.pardir, 'test_case.py', 'test_case_that_fails')
+    assert os.readlink(str(failedlogpath)) == failedlogdest
+
+    assert 'passed' in ls(basetemp(testdir).join('logs', 'by_outcome'))
+    passedlogpath = basetemp(testdir).join('logs', 'by_outcome', 'passed', 'test_case.py', 'test_case_that_passes')
+    assert passedlogpath.islink()
+    passedlogdest = os.path.join(
+        os.path.pardir, os.path.pardir, os.path.pardir, 'test_case.py', 'test_case_that_passes')
+    assert os.readlink(str(passedlogpath)) == passedlogdest
 
 
 def test_file_handlers_root(testdir):

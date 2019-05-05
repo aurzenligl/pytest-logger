@@ -135,6 +135,48 @@ It has structure following pytest test item's `nodeid`_.
         └── test_cat
             └── proc
 
+
+.. _`split logs by outcome`:
+
+Split logs by outcome
+---------------------------------------
+It is possible to split the logs by test outcome. If chosen to do so (by calling below method):
+
+::
+
+    # content of conftest.py
+    def pytest_logger_config(logger_config):
+        logger_config.split_by_outcome()
+
+Will result in below directory structure:
+
+::
+
+    logs/
+    ├── classtests
+    │   └── test_y.py
+    │       └── TestClass
+    │           ├── test_class
+    │           |   ├── daemon
+    │           |   └── setup
+    |           └── test_that_failed_two
+    |               └── somelogfile
+    ├── by_outcome
+    |   └── failed
+    |       ├── classtests
+    │       |   └── test_y.py
+    │       |       └── TestClass
+    |       |           └── test_that_failed_two -> ../../../../../../classtests/test_y.py/TestClass/test_that_failed_two
+    |       └── test_p.py
+    |           └── test_that_failed_one -> ../../../../test_p.py/test_that_failed_one
+    └── test_p.py
+        ├── test_cat
+        |   └── proc
+        └── test_that_failed_one
+            └── somelog
+
+You can change the default `by_outcome` dirname to something else, as well as add more "per-outcome" subdirectories by passing proper arguments to the `split_by_outcome` method.
+
 .. _`link to logs dir`:
 
 Link to logs directory
@@ -184,7 +226,8 @@ API reference
 .. autoclass:: LoggerConfig()
     :members: add_loggers,
               set_log_option_default,
-              set_formatter_class
+              set_formatter_class,
+              split_by_outcome
 
 .. _`conftest.py`: http://docs.pytest.org/en/latest/writing_plugins.html#conftest-py
 .. _`unwanted message`: https://docs.python.org/2/howto/logging.html#what-happens-if-no-configuration-is-provided

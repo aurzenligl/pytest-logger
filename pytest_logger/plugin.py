@@ -63,6 +63,8 @@ class LoggerPlugin(object):
         self._loggers = _loggers_from_logcfg(logcfg, config.getoption('loggers')) if logcfg._enabled else None
         self._formatter_class = logcfg._formatter_class or DefaultFormatter
         self._logsdir = None
+        self._split_by_outcome_subdir = logcfg._split_by_outcome_subdir
+        self._split_by_outcome_outcomes = logcfg._split_by_outcome_outcomes
 
     def logsdir(self):
         ldir = self._logsdir
@@ -97,9 +99,20 @@ class LoggerPlugin(object):
         if logger:
             logger.on_teardown()
 
+    @pytest.mark.hookwrapper
     def pytest_runtest_makereport(self, item, call):
+        outcome = yield
+        tr = outcome.get_result()
         logger = getattr(item, '_logger', None)
         if logger:
+            if self._logsdir and self._split_by_outcome_subdir and tr.outcome in self._split_by_outcome_outcomes:
+                split_by_outcome_logdir = self._logsdir.join(self._split_by_outcome_subdir, tr.outcome)
+                nodeid = _sanitize_nodeid(item.nodeid)
+                nodepath = os.path.dirname(nodeid)
+                split_by_outcome_logdir.join(nodepath).ensure(dir=1)
+                destdir_relpath = os.path.relpath(str(self._logsdir.join(nodeid)),
+                                                  str(split_by_outcome_logdir.join(nodepath)))
+                _refresh_link(destdir_relpath, str(split_by_outcome_logdir.join(nodeid)))
             if call.when == 'teardown':
                 logger.on_makereport()
 
@@ -159,6 +172,8 @@ class LoggerConfig(object):
         self._loggers = []
         self._formatter_class = None
         self._log_option_default = ''
+        self._split_by_outcome_subdir = None
+        self._split_by_outcome_outcomes = []
 
     def add_loggers(self, loggers, stdout_level=logging.NOTSET, file_level=logging.NOTSET):
         """Adds loggers for stdout/filesystem handling.
@@ -194,6 +209,23 @@ class LoggerConfig(object):
     def set_log_option_default(self, value):
         """ Sets default value of `log` option."""
         self._log_option_default = value
+
+    def split_by_outcome(self, outcomes=None, subdir='by_outcome'):
+        """Makes a directory inside main logdir where logs are further split by test outcome
+
+        :param subdir: name for the subdirectory in main log directory
+        :param outcomes: list of test outcomes to be handled (failed/passed/skipped)
+        """
+        if outcomes is not None:
+            allowed_outcomes = ['passed', 'failed', 'skipped']
+            unexpected_outcomes = set(outcomes) - set(allowed_outcomes)
+            if unexpected_outcomes:
+                raise ValueError('got unexpected_outcomes: <' + str(list(unexpected_outcomes)) + '>')
+            self._split_by_outcome_outcomes = outcomes
+        else:
+            self._split_by_outcome_outcomes = ['failed']
+
+        self._split_by_outcome_subdir = subdir
 
 
 class LoggerHookspec(object):

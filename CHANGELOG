@@ -2,6 +2,7 @@ next
 -----------------------------------
 - class with testcases is represented with additional directory instead of '.'
   separating class name and testcase name
+- add the "split logs by outcome" functionality
 
 0.4.0
 -----------------------------------
