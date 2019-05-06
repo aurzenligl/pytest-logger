@@ -213,8 +213,8 @@ class LoggerConfig(object):
     def split_by_outcome(self, outcomes=None, subdir='by_outcome'):
         """Makes a directory inside main logdir where logs are further split by test outcome
 
-        :param subdir: name for the subdirectory in main log directory
         :param outcomes: list of test outcomes to be handled (failed/passed/skipped)
+        :param subdir: name for the subdirectory in main log directory
         """
         if outcomes is not None:
             allowed_outcomes = ['passed', 'failed', 'skipped']
