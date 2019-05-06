@@ -154,28 +154,30 @@ Will result in below directory structure:
 
     logs/
     ├── classtests
-    │   └── test_y.py
-    │       └── TestClass
+    │   └── test_y.py
+    │       └── TestClass
     │           ├── test_class
-    │           |   ├── daemon
-    │           |   └── setup
-    |           └── test_that_failed_two
-    |               └── somelogfile
+    │           │   ├── daemon
+    │           │   └── setup
+    │           └── test_that_failed_two
+    │               └── somelogfile
     ├── by_outcome
-    |   └── failed
-    |       ├── classtests
-    │       |   └── test_y.py
-    │       |       └── TestClass
-    |       |           └── test_that_failed_two -> ../../../../../../classtests/test_y.py/TestClass/test_that_failed_two
-    |       └── test_p.py
-    |           └── test_that_failed_one -> ../../../../test_p.py/test_that_failed_one
+    │   └── failed
+    │       ├── classtests
+    │       │   └── test_y.py
+    │       │       └── TestClass
+    │       │           └── test_that_failed_two -> ../../../../../../classtests/test_y.py/TestClass/test_that_failed_two
+    │       └── test_p.py
+    │           └── test_that_failed_one -> ../../../../test_p.py/test_that_failed_one
     └── test_p.py
-        ├── test_cat
-        |   └── proc
+        ├── test_cat
+        │   └── proc
         └── test_that_failed_one
             └── somelog
 
 You can change the default `by_outcome` dirname to something else, as well as add more "per-outcome" subdirectories by passing proper arguments to the `split_by_outcome` method.
+
+See: :py:meth:`LoggerConfig.split_by_outcome`
 
 .. _`link to logs dir`:
 
