@@ -68,3 +68,8 @@ target/
 # pyenv
 .python-version
 
+# pytest
+.pytest_cache/
+
+# IDE
+.idea/

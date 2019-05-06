@@ -1,4 +1,4 @@
-next
+0.5.0
 -----------------------------------
 - class with testcases is represented with additional directory instead of '.'
   separating class name and testcase name
