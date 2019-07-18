@@ -73,6 +73,8 @@ class LoggerPlugin(object):
         logger_logsdir = self._config.getoption('logger_logsdir')
         if not logger_logsdir:
             logger_logsdir = self._config.getini('logger_logsdir')
+        if not logger_logsdir:
+            logger_logsdir = self._config.hook.pytest_logger_logsdir(config=self._config)
         if logger_logsdir:
             ldir = _make_logsdir_dir(logger_logsdir)
         else:
@@ -267,6 +269,21 @@ class LoggerHookspec(object):
         :arg config: pytest config object, holds e.g. options
 
         :return string: Absolute path of requested link to logs directory.
+        """
+
+    @pytest.hookspec(firstresult=True)
+    def pytest_logger_logsdir(self, config):
+        """ called after cmdline options parsing.
+        If implemented, place logs into the location returned. This is similar
+        to using --logger-logsdir or the logger_logsdir ini option, but will
+        only be used if those are not.
+
+        Additionally, if multiple implementations of this hook are found, only
+        the first non-None value will be used.
+
+        :arg config: pytest config object, holds e.g. options
+
+        :return string: Absolute path of logs directory.
         """
 
 

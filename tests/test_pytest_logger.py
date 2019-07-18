@@ -330,6 +330,25 @@ def test_logdir_link(testdir):
     assert ['test_case'] == ls(testdir.tmpdir, 'my_link_dir/test_case.py')
 
 
+def test_logsdir(testdir):
+    makefile(testdir, ['conftest.py'], """
+        import os
+        def pytest_logger_fileloggers(item):
+            return ['']
+        def pytest_logger_logsdir(config):
+            return os.path.join(os.path.dirname(__file__), 'my_logs_dir')
+    """)
+    makefile(testdir, ['test_case.py'], """
+        def test_case():
+            pass
+    """)
+
+    result = testdir.runpytest('-s')
+    assert result.ret == 0
+    assert 'my_logs_dir' in ls(testdir.tmpdir)
+    assert ['test_case'] == ls(testdir.tmpdir, 'my_logs_dir/test_case.py')
+
+
 def test_format(testdir):
     makefile(testdir, ['conftest.py'], """
         import os
