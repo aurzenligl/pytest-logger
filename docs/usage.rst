@@ -181,6 +181,20 @@ See: :py:meth:`LoggerConfig.split_by_outcome`
 
 .. _`link to logs dir`:
 
+Set the log directory
+---------------------------------------
+
+Implement the logsdir hook to place logs in a different directory.
+
+::
+
+    # content of conftest.py
+    import os
+    def pytest_logger_logsdir(config):
+        return os.path.join(os.path.dirname(__file__), 'logs')
+
+- see :py:meth:`LoggerHookspec.pytest_logger_logsdir`
+
 Link to logs directory
 ---------------------------------------
 
