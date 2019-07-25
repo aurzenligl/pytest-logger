@@ -1,3 +1,7 @@
+0.5.1
+-----------------------------------
+- added "pytest_logger_logsdir" hook for convenience
+
 0.5.0
 -----------------------------------
 - class with testcases is represented with additional directory instead of '.'
