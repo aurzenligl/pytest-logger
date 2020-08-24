@@ -6,9 +6,10 @@ environment:
   matrix:
     - TOXENV: check
     - TOXENV: 'py27-pytest{35,36,37,4}'
-    - TOXENV: 'py35-pytest{35,36,37,4}'
-    - TOXENV: 'py36-pytest{35,36,37,4}'
-    - TOXENV: 'py37-pytest{35,36,37,4}'
+    - TOXENV: 'py35-pytest{3,4,5,6}'
+    - TOXENV: 'py36-pytest{3,4,5,6}'
+    - TOXENV: 'py37-pytest{3,4,5,6}'
+    - TOXENV: 'py38-pytest{3,4,5,6}'
     - TOXENV: 'pypy-pytest{35,36,37,4}'
 init:
   - ps: echo $env:TOXENV
