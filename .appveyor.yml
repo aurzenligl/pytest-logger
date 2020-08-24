@@ -6,19 +6,14 @@ environment:
   matrix:
     - TOXENV: check
     - TOXENV: 'py27-pytest{35,36,37,4}'
-    - TOXENV: 'pypy-pytest{35,36,37,4}'
     - TOXENV: 'py35-pytest{3,4,5,6}'
     - TOXENV: 'py36-pytest{3,4,5,6}'
     - TOXENV: 'py37-pytest{3,4,5,6}'
     - TOXENV: 'py38-pytest{3,4,5,6}'
-    - TOXENV: 'pypy3-pytest{3,4,5,6}'
 init:
   - ps: echo $env:TOXENV
   - ps: ls C:\Python*
 install:
-  - IF "%TOXENV:~0,5%" == "pypy-" choco install --no-progress python.pypy
-  - IF "%TOXENV:~0,6%" == "pypy3-" choco install --no-progress pypy3
-  - SET PATH=C:\tools\pypy\pypy;%PATH%
   - C:\Python36\python -m pip install --progress-bar=off tox
 test_script:
   - C:\Python36\python -m tox
