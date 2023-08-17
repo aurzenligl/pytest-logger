@@ -101,7 +101,7 @@ class LoggerPlugin(object):
         if logger:
             logger.on_teardown()
 
-    @pytest.mark.hookwrapper
+    @pytest.hookimpl(hookwrapper=True)
     def pytest_runtest_makereport(self, item, call):
         outcome = yield
         tr = outcome.get_result()
