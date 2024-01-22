@@ -12,6 +12,12 @@ def test_sanitize_nodeid():
         'parametrictests/test_z.py/test_param-2-abc'
     assert plugin._sanitize_nodeid('parametrictests/test_z.py::test_param[4.127-de]') == \
         'parametrictests/test_z.py/test_param-4.127-de'
+    assert plugin._sanitize_nodeid('parametrictests/test_z.py::test_param[x-a/b]') == \
+        'parametrictests/test_z.py/test_param-x-a-b'
+    assert plugin._sanitize_nodeid('parametrictests/test_z.py::test_param[y-/c/d]') == \
+        'parametrictests/test_z.py/test_param-y-c-d'
+    assert plugin._sanitize_nodeid('parametrictests/test_z.py::test_param[z-/e-1/f-1]') == \
+        'parametrictests/test_z.py/test_param-z-e-1-f-1'
 
 
 def test_sanitize_level():

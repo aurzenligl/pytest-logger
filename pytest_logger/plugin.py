@@ -318,11 +318,13 @@ def logdir(request):
     return _make_logdir(request._pyfuncitem)
 
 
-def _sanitize_nodeid(filename):
-    filename = filename.replace('::()::', '/')
-    filename = filename.replace('::', '/')
-    filename = re.sub(r'\[(.+)\]', r'-\1', filename)
-    return filename
+def _sanitize_nodeid(node_id):
+    tokens = node_id.split('::')
+    tokens[-1] = tokens[-1].replace('/', '-')
+    tokens[-1] = re.sub(r'-+', '-', tokens[-1])
+    node_id = '/'.join([x for x in tokens if x != '()'])
+    node_id = re.sub(r'\[(.+)\]', r'-\1', node_id)
+    return node_id
 
 
 def _sanitize_level(level, raises=True):

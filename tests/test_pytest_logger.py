@@ -338,15 +338,30 @@ def test_logsdir(testdir):
         def pytest_logger_logsdir(config):
             return os.path.join(os.path.dirname(__file__), 'my_logs_dir')
     """)
-    makefile(testdir, ['test_case.py'], """
-        def test_case():
+    makefile(testdir, ['test_cases.py'], """
+        import pytest
+
+        def test_simple():
+            pass
+
+        @pytest.mark.parametrize('param1, param2', [
+            ('x', 'a_b_c'),
+            ('y', 'd/e/f'),
+            ('z', '/g/h/i'),
+            ('v', '/j-1/k-1/l-1'),
+        ])
+        def test_param(param1, param2):
             pass
     """)
 
     result = testdir.runpytest('-s')
     assert result.ret == 0
     assert 'my_logs_dir' in ls(testdir.tmpdir)
-    assert ['test_case'] == ls(testdir.tmpdir, 'my_logs_dir/test_case.py')
+    assert 'test_simple' in ls(testdir.tmpdir, 'my_logs_dir/test_cases.py')
+    assert 'test_param-x-a_b_c' in ls(testdir.tmpdir, 'my_logs_dir/test_cases.py')
+    assert 'test_param-y-d-e-f' in ls(testdir.tmpdir, 'my_logs_dir/test_cases.py')
+    assert 'test_param-z-g-h-i' in ls(testdir.tmpdir, 'my_logs_dir/test_cases.py')
+    assert 'test_param-v-j-1-k-1-l-1' in ls(testdir.tmpdir, 'my_logs_dir/test_cases.py')
 
 
 def test_format(testdir):
