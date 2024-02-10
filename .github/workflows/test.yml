@@ -25,7 +25,6 @@ jobs:
           - ubuntu-py310
           - ubuntu-py311
           - ubuntu-py312
-          - ubuntu-py313
           - ubuntu-pypy3
 
         include:
@@ -51,9 +50,6 @@ jobs:
           - name: ubuntu-py312
             python: "3.12"
             tox_env: py312
-          - name: ubuntu-py313
-            python: "3.13"
-            tox_env: py313
           - name: ubuntu-pypy3
             python: "pypy-3.7"
             tox_env: pypy3
