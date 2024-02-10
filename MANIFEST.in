@@ -5,6 +5,7 @@ include CHANGELOG
 
 include *.yml
 include .bumpversion.cfg
+include .readthedocs.yaml
 include tox.ini
 include init-tox-env
 
