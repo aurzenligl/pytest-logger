@@ -4,5 +4,5 @@
 # Script should be used as '. init-tox-env'.
 
 projectdir="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-envname=py35-pytest37
+envname="$@"
 tox -c ${projectdir} -e ${envname} --notest && source ${projectdir}/.tox/${envname}/bin/activate
