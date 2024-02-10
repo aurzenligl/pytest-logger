@@ -2,6 +2,8 @@ version: '{build}-{branch}'
 build: off
 cache:
   - '%LOCALAPPDATA%\pip\Cache'
+image:
+  - Visual Studio 2022
 environment:
   matrix:
     - TOXENV: check
