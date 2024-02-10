@@ -10,9 +10,8 @@
 .. image:: https://coveralls.io/repos/github/aurzenligl/pytest-logger/badge.svg?branch=master
     :target: https://coveralls.io/github/aurzenligl/pytest-logger?branch=master
     :alt: Coverage Status
-.. image:: https://travis-ci.org/aurzenligl/pytest-logger.svg?branch=master
-    :target: https://travis-ci.org/aurzenligl/pytest-logger
-    :alt: Travis-CI Build Status
+.. image:: https://github.com/aurzenligl/pytest-logger/workflows/test/badge.svg
+    :target: https://github.com/aurzenligl/pytest-logger/actions?query=workflow%3Atest
 .. image:: https://ci.appveyor.com/api/projects/status/1h4cy8tk220pn03o?svg=true
     :target: https://ci.appveyor.com/project/aurzenligl/pytest-logger
     :alt: AppVeyor-CI Build Status
