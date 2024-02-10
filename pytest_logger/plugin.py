@@ -453,7 +453,7 @@ def _loggers_from_hooks(item):
 
 
 def _choose_loggers(config_loggers, hook_loggers):
-    assert (not config_loggers) or (not hook_loggers),\
+    assert (not config_loggers) or (not hook_loggers), \
         'pytest_logger_config and pytest_logger_*loggers hooks used at the same time'
     return config_loggers or hook_loggers
 
