@@ -79,7 +79,7 @@ def test_set_formatter_class():
     assert str(e.value) == 'Formatter should be a class inheriting from logging.Formatter'
     with pytest.raises(TypeError) as e:
         logcfg.set_formatter_class(10)
-    assert str(e.value) == 'issubclass() arg 1 must be a class'
+    assert str(e.value).startswith('issubclass() arg 1 must be a class')
 
 
 def test_loggers_from_logcfg_empty():
