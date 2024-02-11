@@ -1,3 +1,10 @@
+1.0.0
+-----------------------------------
+- declare pytest-logger stable and release first stable version
+- modernized infra: github-workflows, appveyor, read-the-docs, coveralls
+- upgraded python and pytest versions
+- fixed pytest warning: hookimpl instead of mark used
+
 0.5.1
 -----------------------------------
 - added "pytest_logger_logsdir" hook for convenience
