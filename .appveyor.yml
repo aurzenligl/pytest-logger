@@ -1,6 +1,9 @@
 version: '{build}-{branch}'
 build: false
 
+cache:
+  - '%LOCALAPPDATA%\pip\Cache'
+
 image:
   - Visual Studio 2022
 
