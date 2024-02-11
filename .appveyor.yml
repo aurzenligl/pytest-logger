@@ -7,24 +7,31 @@ image:
 environment:
   matrix:
     - TOXENV: check
+      PY_PYTHON: 3.10
     - TOXENV: 'py37-pytest6'
+      PY_PYTHON: 3.7
     - TOXENV: 'py37-pytest7'
-    - TOXENV: 'py37-pytest8'
+      PY_PYTHON: 3.7
     - TOXENV: 'py38-pytest6'
-    - TOXENV: 'py38-pytest7'
+      PY_PYTHON: 3.8
     - TOXENV: 'py38-pytest8'
+      PY_PYTHON: 3.8
     - TOXENV: 'py39-pytest6'
-    - TOXENV: 'py39-pytest7'
+      PY_PYTHON: 3.9
     - TOXENV: 'py39-pytest8'
+      PY_PYTHON: 3.9
     - TOXENV: 'py310-pytest6'
-    - TOXENV: 'py310-pytest7'
+      PY_PYTHON: 3.10
     - TOXENV: 'py310-pytest8'
+      PY_PYTHON: 3.10
     - TOXENV: 'py311-pytest6'
-    - TOXENV: 'py311-pytest7'
+      PY_PYTHON: 3.11
     - TOXENV: 'py311-pytest8'
+      PY_PYTHON: 3.11
     - TOXENV: 'py312-pytest6'
-    - TOXENV: 'py312-pytest7'
+      PY_PYTHON: 3.12
     - TOXENV: 'py312-pytest8'
+      PY_PYTHON: 3.12
 
 init:
   - ps: echo $env:TOXENV
