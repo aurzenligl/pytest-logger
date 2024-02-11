@@ -43,7 +43,7 @@ init:
 install:
   - py --list
   - py -m pip install --upgrade pip
-  - py -m pip install tox pyreadline3
+  - py -m pip install tox
 
 test_script:
   - py -m tox
