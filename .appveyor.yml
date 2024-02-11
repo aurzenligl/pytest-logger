@@ -17,9 +17,9 @@ init:
   - ps: echo $env:TOXENV
   - ps: ls C:\Python*
 install:
-  - C:\Python36\python -m pip install --progress-bar=off tox
+  - C:\Python310\python -m pip install --progress-bar=off tox
 test_script:
-  - C:\Python36\python -m tox
+  - C:\Python310\python -m tox
 on_failure:
   - ps: dir "env:"
   - ps: get-content .tox\*\log\*
