@@ -8,7 +8,6 @@ import time
 import datetime
 import argparse
 from builtins import object, int
-from past.builtins import basestring
 
 
 def pytest_addhooks(pluginmanager):
@@ -328,7 +327,7 @@ def _sanitize_nodeid(node_id):
 
 
 def _sanitize_level(level, raises=True):
-    if isinstance(level, basestring):
+    if isinstance(level, str):
         try:
             return int(level)
         except ValueError:
@@ -422,7 +421,7 @@ def _log_option_parser(loggers):
 def _loggers_from_logcfg(logcfg, logopt):
     def to_stdout(loggers, opt):
         def one(loggers, one):
-            if isinstance(one, basestring):
+            if isinstance(one, str):
                 return one, next(row for row in loggers if one in row[0])[1]
             else:
                 return one
@@ -440,7 +439,7 @@ def _loggers_from_logcfg(logcfg, logopt):
 def _loggers_from_hooks(item):
     def to_loggers(configs_lists):
         def to_logger_and_level(cfg):
-            if isinstance(cfg, basestring):
+            if isinstance(cfg, str):
                 name, level = cfg, logging.NOTSET
             else:
                 name, level = cfg
