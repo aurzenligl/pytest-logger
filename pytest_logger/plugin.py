@@ -7,7 +7,6 @@ import time
 import datetime
 import argparse
 import shutil
-from builtins import object, int
 from pathlib import Path
 
 
@@ -51,12 +50,12 @@ def pytest_configure(config):
     config.pluginmanager.register(LoggerPlugin(config, early_logger._logcfg), '_logger')
 
 
-class EarlyLoggerPlugin(object):
+class EarlyLoggerPlugin:
     def __init__(self, logcfg):
         self._logcfg = logcfg
 
 
-class LoggerPlugin(object):
+class LoggerPlugin:
     def __init__(self, config, logcfg):
         self._config = config
         self._logdirlinks = config.hook.pytest_logger_logdirlink(config=config)
@@ -119,7 +118,7 @@ class LoggerPlugin(object):
                 logger.on_makereport()
 
 
-class LoggerState(object):
+class LoggerState:
     def __init__(self, item, stdoutloggers, fileloggers, formatter):
         self._put_newlines = bool(item.config.option.capture == 'no' and stdoutloggers)
         self.handlers = _make_handlers(stdoutloggers, fileloggers, item, formatter)
@@ -142,7 +141,7 @@ class LoggerState(object):
         _disable(self.handlers)
 
 
-class RootEnabler(object):
+class RootEnabler:
     def __init__(self, enabled):
         self._enabled = enabled
         self._root_level = logging.root.level
@@ -157,7 +156,7 @@ class RootEnabler(object):
             logging.root.setLevel(self._root_level)
 
 
-class Loggers(object):
+class Loggers:
     def __init__(self, stdout, file_):
         self.stdout = stdout
         self.file = file_
@@ -166,7 +165,7 @@ class Loggers(object):
         return bool(self.stdout) or bool(self.file)
 
 
-class LoggerConfig(object):
+class LoggerConfig:
     """Configuration of logging to stdout and filesystem."""
 
     def __init__(self):
@@ -230,7 +229,7 @@ class LoggerConfig(object):
         self._split_by_outcome_subdir = subdir
 
 
-class LoggerHookspec(object):
+class LoggerHookspec:
     def pytest_logger_config(self, logger_config):
         """ called before cmdline options parsing. Accepts terse configuration
         of both stdout and file logging, adds cmdline options to manipulate
