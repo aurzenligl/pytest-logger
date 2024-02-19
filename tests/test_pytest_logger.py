@@ -2,6 +2,10 @@ import os
 import pytest
 import textwrap
 from pathlib import Path
+try:
+    from pytest import LineMatcher
+except ImportError:
+    from _pytest.pytester import LineMatcher  # for pytest 6
 
 
 def makefile(path: Path, content: str):
@@ -52,7 +56,7 @@ def test_case_py(pytester):
     """)
 
 
-class FileLineMatcher(pytest.LineMatcher):
+class FileLineMatcher(LineMatcher):
     def __init__(self, path: Path):
         super().__init__(path.read_text().splitlines())
 
