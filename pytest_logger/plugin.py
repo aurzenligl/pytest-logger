@@ -1,13 +1,14 @@
 import os
 import sys
 import re
-import py
 import pytest
 import logging
 import time
 import datetime
 import argparse
+import shutil
 from builtins import object, int
+from pathlib import Path
 
 
 def pytest_addhooks(pluginmanager):
@@ -107,13 +108,13 @@ class LoggerPlugin(object):
         logger = getattr(item, '_logger', None)
         if logger:
             if self._logsdir and self._split_by_outcome_subdir and tr.outcome in self._split_by_outcome_outcomes:
-                split_by_outcome_logdir = self._logsdir.join(self._split_by_outcome_subdir, tr.outcome)
+                split_by_outcome_logdir = self._logsdir / self._split_by_outcome_subdir / tr.outcome
                 nodeid = _sanitize_nodeid(item.nodeid)
                 nodepath = os.path.dirname(nodeid)
-                split_by_outcome_logdir.join(nodepath).ensure(dir=1)
-                destdir_relpath = os.path.relpath(str(self._logsdir.join(nodeid)),
-                                                  str(split_by_outcome_logdir.join(nodepath)))
-                _refresh_link(destdir_relpath, str(split_by_outcome_logdir.join(nodeid)))
+                outcomedir = split_by_outcome_logdir / nodepath
+                outcomedir.mkdir(parents=True, exist_ok=True)
+                destdir_relpath = os.path.relpath(self._logsdir / nodeid, outcomedir)
+                _refresh_link(destdir_relpath, split_by_outcome_logdir / nodeid)
             if call.when == 'teardown':
                 logger.on_makereport()
 
@@ -356,21 +357,20 @@ def _make_logsdir_tmpdir(tmpdirhandler):
     if logsdir.basename.startswith('popen-gw'):
         logsdir = logsdir.join('..')
     logsdir = logsdir.join('logs').ensure(dir=1)
-    return logsdir
+    return Path(logsdir)
 
 
-def _make_logsdir_dir(dstname, cleandir=True):
-    logsdir = py.path.local(dstname)
-    if cleandir:
-        if logsdir.check():
-            logsdir.remove()
-        logsdir.mkdir()
-    return logsdir
+def _make_logsdir_dir(dstname):
+    shutil.rmtree(dstname, ignore_errors=True)
+    os.mkdir(dstname)
+    return Path(dstname)
 
 
 def _make_logdir(item):
     plugin = item.config.pluginmanager.getplugin('_logger')
-    return plugin.logsdir().join(_sanitize_nodeid(item.nodeid)).ensure(dir=1)
+    logdir = plugin.logsdir() / _sanitize_nodeid(item.nodeid)
+    logdir.mkdir(parents=True)
+    return logdir
 
 
 def _enable(handlers):
@@ -485,7 +485,7 @@ def _make_file_handlers(loggers, fmt, logdir):
         name, level = logger_and_level
         logger = logging.getLogger(name)
         name = name or 'logs'
-        logfile = str(logdir.join(name))
+        logfile = str(logdir / name)
         handler = logging.FileHandler(filename=logfile, mode='w', delay=True)
         handler.setFormatter(fmt)
         handler.setLevel(level)

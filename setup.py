@@ -24,7 +24,7 @@ setup(
     long_description=read('README.rst'),
     long_description_content_type='text/x-rst',
     packages=['pytest_logger'],
-    install_requires=['pytest>=3.2', 'py'],
+    install_requires=['pytest>=3.2'],
     keywords='py.test pytest logging',
     classifiers=[
         'Development Status :: 5 - Production/Stable',

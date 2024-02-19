@@ -2,8 +2,7 @@ import os
 import sys
 import pytest
 import platform
-from py.code import Source
-from _pytest.pytester import LineMatcher
+import textwrap
 
 win32 = sys.platform == 'win32'
 win32py2 = win32 and sys.version_info[0] == 2
@@ -11,7 +10,7 @@ win32pypy = win32 and platform.python_implementation() == 'PyPy'
 
 
 def makefile(testdir, path, content):
-    return testdir.tmpdir.ensure(*path).write('\n'.join(Source(content)))
+    return testdir.tmpdir.ensure(*path).write(textwrap.dedent(content))
 
 
 def ls(dir, filepath=''):
@@ -64,10 +63,10 @@ def test_case_py(testdir):
     return filename
 
 
-class FileLineMatcher(LineMatcher):
+class FileLineMatcher(pytest.LineMatcher):
     def __init__(self, dir, filepath):
         lines = dir.join(filepath).read().splitlines()
-        LineMatcher.__init__(self, lines)
+        pytest.LineMatcher.__init__(self, lines)
 
 
 def test_logdir_fixture(testdir):
@@ -566,7 +565,7 @@ def test_logsdir_cleanup(testdir, conftest_py, test_case_py):
         logger_logsdir={0}
     """.format(logsdir))
 
-    logsdir.ensure('tmpfile').write('\n'.join(Source('this shall be removed')))
+    logsdir.ensure('tmpfile').write(textwrap.dedent('this shall be removed'))
     logsdir.join('tmpdir')
 
     result = testdir.runpytest('-s')
