@@ -686,8 +686,8 @@ def test_logger_config_option_missing_without_hook(pytester, test_case_py, with_
             logger_config.add_loggers(['baz'], stdout_level='error', file_level='warning')
     """ if with_hook else ""))
 
-    result = pytester.runpytest('-s', '--loggers=foo')
-    assert result.ret == (3 if with_hook else 0)
+    result = pytester.runpytest_subprocess('-s', '--loggers=foo')
+    assert result.ret == (1 if with_hook else 0)
 
     if with_hook:
         result.stderr.fnmatch_lines([
