@@ -19,6 +19,8 @@ jobs:
       matrix:
         name:
           - ubuntu-py310-lintcov
+          - ubuntu-py310-pytest6
+          - ubuntu-py310-pytest7
           - ubuntu-py37
           - ubuntu-py38
           - ubuntu-py39
@@ -32,6 +34,12 @@ jobs:
             python: "3.10"
             tox_env: check,coverage
             coverage: true
+          - name: ubuntu-py310-pytest6
+            python: "3.10"
+            tox_env: py310-pytest6
+          - name: ubuntu-py310-pytest7
+            python: "3.10"
+            tox_env: py310-pytest7
           - name: ubuntu-py37
             python: "3.7"
             tox_env: py37
