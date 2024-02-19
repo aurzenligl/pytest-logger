@@ -1,14 +1,7 @@
 import os
-import sys
 import pytest
-import platform
 import textwrap
 from pathlib import Path
-
-
-win32 = sys.platform == 'win32'
-win32py2 = win32 and sys.version_info[0] == 2
-win32pypy = win32 and platform.python_implementation() == 'PyPy'
 
 
 def makefile(path: Path, content: str):
@@ -210,7 +203,6 @@ def test_file_handlers(pytester, conftest_py, test_case_py):
     ])
 
 
-@pytest.mark.skipif(win32py2, reason="python 2 on windows doesn't have symlink feature")
 def test_split_logs_by_outcome(pytester):
     makefile(pytester.path / 'conftest.py', """
         import logging
@@ -303,7 +295,6 @@ def test_file_handlers_root(pytester):
     ])
 
 
-@pytest.mark.skipif(win32py2, reason="python 2 on windows doesn't have symlink feature")
 def test_logdir_link(pytester):
     makefile(pytester.path / 'conftest.py', """
         import os
@@ -423,9 +414,8 @@ def test_multiple_conftests(pytester):
     result = pytester.runpytest('subdir', 'makes_nodeid_in_pytest29_contain_subdir_name', '-s')
     assert result.ret == 0
 
-    if not win32py2:
-        assert ls(pytester.path, 'logs/subdir/test_case.py') == ['test_case']
-        assert ls(pytester.path, 'subdir/logs/subdir/test_case.py') == ['test_case']
+    assert ls(pytester.path, 'logs/subdir/test_case.py') == ['test_case']
+    assert ls(pytester.path, 'subdir/logs/subdir/test_case.py') == ['test_case']
 
     result.stdout.fnmatch_lines([
         '',
@@ -467,7 +457,6 @@ def test_skip_gracefully(pytester):
     assert 'logs' not in ls(pytester.path)
 
 
-@pytest.mark.skipif(win32pypy, reason="pytest-xdist crashes on win32 under pypy")
 def test_xdist(pytester):
     N = 8
     makefile(pytester.path / 'conftest.py', """
@@ -489,8 +478,7 @@ def test_xdist(pytester):
     result = pytester.runpytest('-n3')
     assert result.ret == 0
 
-    if not win32py2:
-        assert ls(pytester.path, 'logs') == ['test_case%s.py' % i for i in range(N)]
+    assert ls(pytester.path, 'logs') == ['test_case%s.py' % i for i in range(N)]
 
     for index in range(N):
         logfilename = 'logs/test_case{0}.py/test_case{0}/foo'.format(index)
