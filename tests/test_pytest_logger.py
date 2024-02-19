@@ -14,8 +14,8 @@ def makefile(path: Path, content: str):
     return path
 
 
-def ls(dir: Path, filepath=''):
-    return sorted(os.listdir(dir / filepath))
+def ls(dir: Path):
+    return sorted(os.listdir(dir))
 
 
 def basetemp(pytester):
@@ -103,19 +103,19 @@ def test_logdir_fixture(pytester):
     result = pytester.runpytest()
     assert result.ret == 0
 
-    assert ls(basetemp(pytester), 'logs') == ['subdir', 'test_foo1.py']
-    assert ls(basetemp(pytester), 'logs/subdir') == ['subsubdir', 'test_foo2.py']
-    assert ls(basetemp(pytester), 'logs/subdir/subsubdir') == ['test_foo3.py']
-    assert ls(basetemp(pytester), 'logs/subdir/subsubdir/test_foo3.py') == ['test_bar']
-    assert ls(basetemp(pytester), 'logs/subdir/test_foo2.py') == ['test_bar']
-    assert ls(basetemp(pytester), 'logs/test_foo1.py') == sorted([
+    assert ls(basetemp(pytester) / 'logs') == ['subdir', 'test_foo1.py']
+    assert ls(basetemp(pytester) / 'logs/subdir') == ['subsubdir', 'test_foo2.py']
+    assert ls(basetemp(pytester) / 'logs/subdir/subsubdir') == ['test_foo3.py']
+    assert ls(basetemp(pytester) / 'logs/subdir/subsubdir/test_foo3.py') == ['test_bar']
+    assert ls(basetemp(pytester) / 'logs/subdir/test_foo2.py') == ['test_bar']
+    assert ls(basetemp(pytester) / 'logs/test_foo1.py') == sorted([
         'test_bar',
         'test_baz',
         'TestInsideClass',
         'test_par-abc-de',
         'test_par-2-4.127',
     ])
-    assert ls(basetemp(pytester), 'logs/test_foo1.py/TestInsideClass') == ['test_qez']
+    assert ls(basetemp(pytester) / 'logs/test_foo1.py/TestInsideClass') == ['test_qez']
 
 
 def test_stdout_handlers(pytester):
@@ -194,9 +194,9 @@ def test_file_handlers(pytester, conftest_py, test_case_py):
         '',
     ])
 
-    assert ls(basetemp(pytester), 'logs') == [test_case_py.name]
-    assert ls(basetemp(pytester), f'logs/{test_case_py.name}') == ['test_case']
-    assert ls(basetemp(pytester), f'logs/{test_case_py.name}/test_case') == ['bar', 'foo']
+    assert ls(basetemp(pytester) / 'logs') == [test_case_py.name]
+    assert ls(basetemp(pytester) / f'logs/{test_case_py.name}') == ['test_case']
+    assert ls(basetemp(pytester) / f'logs/{test_case_py.name}/test_case') == ['bar', 'foo']
 
     FileLineMatcher(basetemp(pytester) / f'logs/{test_case_py.name}/test_case/foo').fnmatch_lines([
         '* foo: this is error',
@@ -284,9 +284,9 @@ def test_file_handlers_root(pytester):
         '',
     ])
 
-    assert ls(basetemp(pytester), 'logs') == ['test_case.py']
-    assert ls(basetemp(pytester), 'logs/test_case.py') == ['test_case']
-    assert ls(basetemp(pytester), 'logs/test_case.py/test_case') == ['foo', 'logs']
+    assert ls(basetemp(pytester) / 'logs') == ['test_case.py']
+    assert ls(basetemp(pytester) / 'logs/test_case.py') == ['test_case']
+    assert ls(basetemp(pytester) / 'logs/test_case.py/test_case') == ['foo', 'logs']
 
     FileLineMatcher(basetemp(pytester) / 'logs/test_case.py/test_case/logs').fnmatch_lines([
         '* foo: this is error',
@@ -315,7 +315,7 @@ def test_logdir_link(pytester):
     result = pytester.runpytest('-s')
     assert result.ret == 0
     assert 'my_link_dir' in ls(pytester.path)
-    assert ['test_case'] == ls(pytester.path, 'my_link_dir/test_case.py')
+    assert ['test_case'] == ls(pytester.path / 'my_link_dir/test_case.py')
 
 
 def test_logsdir(pytester):
@@ -345,11 +345,11 @@ def test_logsdir(pytester):
     result = pytester.runpytest('-s')
     assert result.ret == 0
     assert 'my_logs_dir' in ls(pytester.path)
-    assert 'test_simple' in ls(pytester.path, 'my_logs_dir/test_cases.py')
-    assert 'test_param-x-a_b_c' in ls(pytester.path, 'my_logs_dir/test_cases.py')
-    assert 'test_param-y-d-e-f' in ls(pytester.path, 'my_logs_dir/test_cases.py')
-    assert 'test_param-z-g-h-i' in ls(pytester.path, 'my_logs_dir/test_cases.py')
-    assert 'test_param-v-j-1-k-1-l-1' in ls(pytester.path, 'my_logs_dir/test_cases.py')
+    assert 'test_simple' in ls(pytester.path / 'my_logs_dir/test_cases.py')
+    assert 'test_param-x-a_b_c' in ls(pytester.path / 'my_logs_dir/test_cases.py')
+    assert 'test_param-y-d-e-f' in ls(pytester.path / 'my_logs_dir/test_cases.py')
+    assert 'test_param-z-g-h-i' in ls(pytester.path / 'my_logs_dir/test_cases.py')
+    assert 'test_param-v-j-1-k-1-l-1' in ls(pytester.path / 'my_logs_dir/test_cases.py')
 
 
 def test_format(pytester):
@@ -418,8 +418,8 @@ def test_multiple_conftests(pytester):
     result = pytester.runpytest('subdir', 'makes_nodeid_in_pytest29_contain_subdir_name', '-s')
     assert result.ret == 0
 
-    assert ls(pytester.path, 'logs/subdir/test_case.py') == ['test_case']
-    assert ls(pytester.path, 'subdir/logs/subdir/test_case.py') == ['test_case']
+    assert ls(pytester.path / 'logs/subdir/test_case.py') == ['test_case']
+    assert ls(pytester.path / 'subdir/logs/subdir/test_case.py') == ['test_case']
 
     result.stdout.fnmatch_lines([
         '',
@@ -482,7 +482,7 @@ def test_xdist(pytester):
     result = pytester.runpytest('-n3')
     assert result.ret == 0
 
-    assert ls(pytester.path, 'logs') == ['test_case%s.py' % i for i in range(N)]
+    assert ls(pytester.path / 'logs') == ['test_case%s.py' % i for i in range(N)]
 
     for index in range(N):
         logfilename = f'logs/test_case{index}.py/test_case{index}/foo'
@@ -500,8 +500,8 @@ def test_logsdir_option(pytester, conftest_py, test_case_py):
     ])
 
     assert ls(logsdir) == [test_case_py.name]
-    assert ls(logsdir, test_case_py.name) == ['test_case']
-    assert ls(logsdir, f'{test_case_py.name}/test_case') == ['bar', 'foo']
+    assert ls(logsdir / test_case_py.name) == ['test_case']
+    assert ls(logsdir / f'{test_case_py.name}/test_case') == ['bar', 'foo']
 
     FileLineMatcher(logsdir / f'{test_case_py.name}/test_case/foo').fnmatch_lines([
         '* foo: this is error',
@@ -528,8 +528,8 @@ def test_logsdir_ini(pytester, conftest_py, test_case_py):
     ])
 
     assert ls(logsdir) == [test_case_py.name]
-    assert ls(logsdir, test_case_py.name) == ['test_case']
-    assert ls(logsdir, f'{test_case_py.name}/test_case') == ['bar', 'foo']
+    assert ls(logsdir / test_case_py.name) == ['test_case']
+    assert ls(logsdir / f'{test_case_py.name}/test_case') == ['bar', 'foo']
 
     FileLineMatcher(logsdir / f'{test_case_py.name}/test_case/foo').fnmatch_lines([
         '* foo: this is error',
@@ -560,8 +560,8 @@ def test_logsdir_cleanup(pytester, conftest_py, test_case_py):
     ])
 
     assert ls(logsdir) == [test_case_py.name]
-    assert ls(logsdir, test_case_py.name) == ['test_case']
-    assert ls(logsdir, f'{test_case_py.name}/test_case') == ['bar', 'foo']
+    assert ls(logsdir / test_case_py.name) == ['test_case']
+    assert ls(logsdir / f'{test_case_py.name}/test_case') == ['bar', 'foo']
 
     FileLineMatcher(logsdir / f'{test_case_py.name}/test_case/foo').fnmatch_lines([
         '* foo: this is error',
