@@ -3,42 +3,41 @@ import sys
 import pytest
 import platform
 import textwrap
+from pathlib import Path
+
 
 win32 = sys.platform == 'win32'
 win32py2 = win32 and sys.version_info[0] == 2
 win32pypy = win32 and platform.python_implementation() == 'PyPy'
 
 
-def makefile(testdir, path, content):
-    return testdir.tmpdir.ensure(*path).write(textwrap.dedent(content))
+def makefile(path: Path, content: str):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(textwrap.dedent(content))
+    return path
 
 
-def ls(dir, filepath=''):
-    return sorted([x.basename for x in dir.join(filepath).listdir()])
+def ls(dir: Path, filepath=''):
+    return sorted(os.listdir(dir / filepath))
 
 
-def basetemp(testdir):
-    return testdir.tmpdir.join('..', 'basetemp')
-
-
-def outdir(testdir, dst):
-    return testdir.tmpdir.join('..', dst)
+def basetemp(pytester):
+    return pytester.path.parent / 'basetemp'
 
 
 @pytest.fixture(autouse=True)
-def set_classic_output(monkeypatch, testdir):
-    runpytest = testdir.runpytest
+def set_classic_output(monkeypatch, pytester):
+    runpytest = pytester.runpytest
 
     def wrapper(*args, **kwargs):
         return runpytest('--override-ini=console_output_style=classic', *args, **kwargs)
 
-    monkeypatch.setattr(testdir, 'runpytest', wrapper)
+    monkeypatch.setattr(pytester, 'runpytest', wrapper)
 
 
 @pytest.fixture
-def conftest_py(testdir):
-    filename = 'conftest.py'
-    makefile(testdir, [filename], """
+def conftest_py(pytester):
+    return makefile(pytester.path / 'conftest.py', """
         import logging
         def pytest_logger_fileloggers(item):
             return [
@@ -46,13 +45,11 @@ def conftest_py(testdir):
                 ('bar', logging.ERROR),
             ]
     """)
-    return filename
 
 
 @pytest.fixture
-def test_case_py(testdir):
-    filename = 'test_case.py'
-    makefile(testdir, [filename], """
+def test_case_py(pytester):
+    return makefile(pytester.path / 'test_case.py', """
         import logging
         def test_case():
             for lgr in (logging.getLogger(name) for name in ['foo', 'bar', 'baz']):
@@ -60,17 +57,15 @@ def test_case_py(testdir):
                 lgr.warning('this is warning')
                 lgr.info('this is info')
     """)
-    return filename
 
 
 class FileLineMatcher(pytest.LineMatcher):
-    def __init__(self, dir, filepath):
-        lines = dir.join(filepath).read().splitlines()
-        pytest.LineMatcher.__init__(self, lines)
+    def __init__(self, path: Path):
+        super().__init__(path.read_text().splitlines())
 
 
-def test_logdir_fixture(testdir):
-    makefile(testdir, ['test_foo1.py'], """
+def test_logdir_fixture(pytester):
+    makefile(pytester.path / 'test_foo1.py', """
         import os
 
         def test_bar(logdir, tmpdir_factory):
@@ -97,41 +92,41 @@ def test_logdir_fixture(testdir):
         def test_this_should_not_generate_logdir():
             pass
     """)
-    makefile(testdir, ['subdir', 'test_foo2.py'], """
+    makefile(pytester.path / 'subdir' / 'test_foo2.py', """
         import os
         def test_bar(logdir):
             assert str(logdir).endswith(os.path.join('logs', 'subdir', 'test_foo2.py', 'test_bar'))
     """)
-    makefile(testdir, ['subdir', 'subsubdir', 'test_foo3.py'], """
+    makefile(pytester.path / 'subdir' / 'subsubdir' / 'test_foo3.py', """
         import os
         def test_bar(logdir):
             assert str(logdir).endswith(os.path.join('logs', 'subdir', 'subsubdir', 'test_foo3.py', 'test_bar'))
     """)
 
-    result = testdir.runpytest()
+    result = pytester.runpytest()
     assert result.ret == 0
 
-    assert ls(basetemp(testdir), 'logs') == ['subdir', 'test_foo1.py']
-    assert ls(basetemp(testdir), 'logs/subdir') == ['subsubdir', 'test_foo2.py']
-    assert ls(basetemp(testdir), 'logs/subdir/subsubdir') == ['test_foo3.py']
-    assert ls(basetemp(testdir), 'logs/subdir/subsubdir/test_foo3.py') == ['test_bar']
-    assert ls(basetemp(testdir), 'logs/subdir/test_foo2.py') == ['test_bar']
-    assert ls(basetemp(testdir), 'logs/test_foo1.py') == sorted([
+    assert ls(basetemp(pytester), 'logs') == ['subdir', 'test_foo1.py']
+    assert ls(basetemp(pytester), 'logs/subdir') == ['subsubdir', 'test_foo2.py']
+    assert ls(basetemp(pytester), 'logs/subdir/subsubdir') == ['test_foo3.py']
+    assert ls(basetemp(pytester), 'logs/subdir/subsubdir/test_foo3.py') == ['test_bar']
+    assert ls(basetemp(pytester), 'logs/subdir/test_foo2.py') == ['test_bar']
+    assert ls(basetemp(pytester), 'logs/test_foo1.py') == sorted([
         'test_bar',
         'test_baz',
         'TestInsideClass',
         'test_par-abc-de',
         'test_par-2-4.127',
     ])
-    assert ls(basetemp(testdir), 'logs/test_foo1.py/TestInsideClass') == ['test_qez']
+    assert ls(basetemp(pytester), 'logs/test_foo1.py/TestInsideClass') == ['test_qez']
 
 
-def test_stdout_handlers(testdir):
-    makefile(testdir, ['conftest.py'], """
+def test_stdout_handlers(pytester):
+    makefile(pytester.path / 'conftest.py', """
         def pytest_logger_stdoutloggers(item):
             return ['foo']
     """)
-    makefile(testdir, ['test_case.py'], """
+    makefile(pytester.path / 'test_case.py', """
         import logging
         def test_case():
             logging.getLogger('foo').warning('this is warning')
@@ -139,7 +134,7 @@ def test_stdout_handlers(testdir):
             logging.getLogger('bar').warning('you do not see me: logger not handled')
     """)
 
-    result = testdir.runpytest()
+    result = pytester.runpytest()
     assert result.ret == 0
     result.stdout.fnmatch_lines([
         '',
@@ -147,7 +142,7 @@ def test_stdout_handlers(testdir):
         '',
     ])
 
-    result = testdir.runpytest('-s')
+    result = pytester.runpytest('-s')
     assert result.ret == 0
     result.stdout.fnmatch_lines([
         '',
@@ -158,8 +153,8 @@ def test_stdout_handlers(testdir):
     ])
 
 
-def test_stdout_handlers_many_loggers(testdir):
-    makefile(testdir, ['conftest.py'], """
+def test_stdout_handlers_many_loggers(pytester):
+    makefile(pytester.path / 'conftest.py', """
         import logging
         def pytest_logger_stdoutloggers(item):
             return [
@@ -168,7 +163,7 @@ def test_stdout_handlers_many_loggers(testdir):
                 ('baz', logging.FATAL)
             ]
     """)
-    makefile(testdir, ['test_case.py'], """
+    makefile(pytester.path / 'test_case.py', """
         import logging
         def test_case():
             for lgr in (logging.getLogger(name) for name in ['foo', 'bar', 'baz']):
@@ -177,7 +172,7 @@ def test_stdout_handlers_many_loggers(testdir):
                 lgr.warning('this is warning')
     """)
 
-    result = testdir.runpytest('-s')
+    result = pytester.runpytest('-s')
     assert result.ret == 0
     result.stdout.fnmatch_lines([
         '',
@@ -193,9 +188,8 @@ def test_stdout_handlers_many_loggers(testdir):
     ])
 
 
-def test_file_handlers(testdir, conftest_py, test_case_py):
-
-    result = testdir.runpytest('-s')
+def test_file_handlers(pytester, conftest_py, test_case_py):
+    result = pytester.runpytest('-s')
     assert result.ret == 0
     result.stdout.fnmatch_lines([
         '',
@@ -203,22 +197,22 @@ def test_file_handlers(testdir, conftest_py, test_case_py):
         '',
     ])
 
-    assert ls(basetemp(testdir), 'logs') == [test_case_py]
-    assert ls(basetemp(testdir), 'logs/{0}'.format(test_case_py)) == ['test_case']
-    assert ls(basetemp(testdir), 'logs/{0}/test_case'.format(test_case_py)) == ['bar', 'foo']
+    assert ls(basetemp(pytester), 'logs') == [test_case_py.name]
+    assert ls(basetemp(pytester), 'logs/{0}'.format(test_case_py.name)) == ['test_case']
+    assert ls(basetemp(pytester), 'logs/{0}/test_case'.format(test_case_py.name)) == ['bar', 'foo']
 
-    FileLineMatcher(basetemp(testdir), 'logs/{0}/test_case/foo'.format(test_case_py)).fnmatch_lines([
+    FileLineMatcher(basetemp(pytester) / f'logs/{test_case_py.name}/test_case/foo').fnmatch_lines([
         '* foo: this is error',
         '* foo: this is warning',
     ])
-    FileLineMatcher(basetemp(testdir), 'logs/{0}/test_case/bar'.format(test_case_py)).fnmatch_lines([
+    FileLineMatcher(basetemp(pytester) / f'logs/{test_case_py.name}/test_case/bar').fnmatch_lines([
         '* bar: this is error',
     ])
 
 
 @pytest.mark.skipif(win32py2, reason="python 2 on windows doesn't have symlink feature")
-def test_split_logs_by_outcome(testdir):
-    makefile(testdir, ['conftest.py'], """
+def test_split_logs_by_outcome(pytester):
+    makefile(pytester.path / 'conftest.py', """
         import logging
         def pytest_logger_fileloggers(item):
             return [
@@ -229,21 +223,21 @@ def test_split_logs_by_outcome(testdir):
         def pytest_logger_config(logger_config):
             logger_config.split_by_outcome(outcomes=['passed', 'failed'])
     """)
-    makefile(testdir, ['test_case.py'], """
-            import pytest
-            import logging
-            def test_case_that_fails():
-                for lgr in (logging.getLogger(name) for name in ['foo', 'bar', 'baz']):
-                    lgr.error('this is error')
-                    lgr.warning('this is warning')
-                pytest.fail('just checking')
+    makefile(pytester.path / 'test_case.py', """
+        import pytest
+        import logging
+        def test_case_that_fails():
+            for lgr in (logging.getLogger(name) for name in ['foo', 'bar', 'baz']):
+                lgr.error('this is error')
+                lgr.warning('this is warning')
+            pytest.fail('just checking')
 
-            def test_case_that_passes():
-                for lgr in (logging.getLogger(name) for name in ['foo', 'bar', 'baz']):
-                    lgr.error('this is error')
-                    lgr.warning('this is warning')
-        """)
-    result = testdir.runpytest('-s')
+        def test_case_that_passes():
+            for lgr in (logging.getLogger(name) for name in ['foo', 'bar', 'baz']):
+                lgr.error('this is error')
+                lgr.warning('this is warning')
+    """)
+    result = pytester.runpytest('-s')
     assert result.ret != 0
     result.stdout.fnmatch_lines([
         '',
@@ -251,25 +245,25 @@ def test_split_logs_by_outcome(testdir):
         '',
     ])
 
-    assert 'by_outcome' in ls(basetemp(testdir).join('logs'))
+    assert 'by_outcome' in ls(basetemp(pytester) / 'logs')
 
-    assert 'failed' in ls(basetemp(testdir).join('logs', 'by_outcome'))
-    failedlogpath = basetemp(testdir).join('logs', 'by_outcome', 'failed', 'test_case.py', 'test_case_that_fails')
-    assert failedlogpath.islink()
+    assert 'failed' in ls(basetemp(pytester) / 'logs' / 'by_outcome')
+    failedlogpath = basetemp(pytester) / 'logs' / 'by_outcome' / 'failed' / 'test_case.py' / 'test_case_that_fails'
+    assert failedlogpath.is_symlink()
     failedlogdest = os.path.join(
         os.path.pardir, os.path.pardir, os.path.pardir, 'test_case.py', 'test_case_that_fails')
     assert os.readlink(str(failedlogpath)) == failedlogdest
 
-    assert 'passed' in ls(basetemp(testdir).join('logs', 'by_outcome'))
-    passedlogpath = basetemp(testdir).join('logs', 'by_outcome', 'passed', 'test_case.py', 'test_case_that_passes')
-    assert passedlogpath.islink()
+    assert 'passed' in ls(basetemp(pytester) / 'logs' / 'by_outcome')
+    passedlogpath = basetemp(pytester) / 'logs' / 'by_outcome' / 'passed' / 'test_case.py' / 'test_case_that_passes'
+    assert passedlogpath.is_symlink()
     passedlogdest = os.path.join(
         os.path.pardir, os.path.pardir, os.path.pardir, 'test_case.py', 'test_case_that_passes')
     assert os.readlink(str(passedlogpath)) == passedlogdest
 
 
-def test_file_handlers_root(testdir):
-    makefile(testdir, ['conftest.py'], """
+def test_file_handlers_root(pytester):
+    makefile(pytester.path / 'conftest.py', """
         import logging
         def pytest_logger_fileloggers(item):
             return [
@@ -277,7 +271,7 @@ def test_file_handlers_root(testdir):
                 ('foo', logging.WARNING),
             ]
     """)
-    makefile(testdir, ['test_case.py'], """
+    makefile(pytester.path / 'test_case.py', """
         import logging
         def test_case():
             for lgr in (logging.getLogger(name) for name in ['foo', 'bar', 'baz']):
@@ -285,7 +279,7 @@ def test_file_handlers_root(testdir):
                 lgr.warning('this is warning')
     """)
 
-    result = testdir.runpytest('-s')
+    result = pytester.runpytest('-s')
     assert result.ret == 0
 
     result.stdout.fnmatch_lines([
@@ -294,50 +288,50 @@ def test_file_handlers_root(testdir):
         '',
     ])
 
-    assert ls(basetemp(testdir), 'logs') == ['test_case.py']
-    assert ls(basetemp(testdir), 'logs/test_case.py') == ['test_case']
-    assert ls(basetemp(testdir), 'logs/test_case.py/test_case') == ['foo', 'logs']
+    assert ls(basetemp(pytester), 'logs') == ['test_case.py']
+    assert ls(basetemp(pytester), 'logs/test_case.py') == ['test_case']
+    assert ls(basetemp(pytester), 'logs/test_case.py/test_case') == ['foo', 'logs']
 
-    FileLineMatcher(basetemp(testdir), 'logs/test_case.py/test_case/logs').fnmatch_lines([
+    FileLineMatcher(basetemp(pytester) / 'logs/test_case.py/test_case/logs').fnmatch_lines([
         '* foo: this is error',
         '* bar: this is error',
         '* baz: this is error',
     ])
-    FileLineMatcher(basetemp(testdir), 'logs/test_case.py/test_case/foo').fnmatch_lines([
+    FileLineMatcher(basetemp(pytester) / 'logs/test_case.py/test_case/foo').fnmatch_lines([
         '* foo: this is error',
         '* foo: this is warning',
     ])
 
 
 @pytest.mark.skipif(win32py2, reason="python 2 on windows doesn't have symlink feature")
-def test_logdir_link(testdir):
-    makefile(testdir, ['conftest.py'], """
+def test_logdir_link(pytester):
+    makefile(pytester.path / 'conftest.py', """
         import os
         def pytest_logger_fileloggers(item):
             return ['']
         def pytest_logger_logdirlink(config):
             return os.path.join(os.path.dirname(__file__), 'my_link_dir')
     """)
-    makefile(testdir, ['test_case.py'], """
+    makefile(pytester.path / 'test_case.py', """
         def test_case():
             pass
     """)
 
-    result = testdir.runpytest('-s')
+    result = pytester.runpytest('-s')
     assert result.ret == 0
-    assert 'my_link_dir' in ls(testdir.tmpdir)
-    assert ['test_case'] == ls(testdir.tmpdir, 'my_link_dir/test_case.py')
+    assert 'my_link_dir' in ls(pytester.path)
+    assert ['test_case'] == ls(pytester.path, 'my_link_dir/test_case.py')
 
 
-def test_logsdir(testdir):
-    makefile(testdir, ['conftest.py'], """
+def test_logsdir(pytester):
+    makefile(pytester.path / 'conftest.py', """
         import os
         def pytest_logger_fileloggers(item):
             return ['']
         def pytest_logger_logsdir(config):
             return os.path.join(os.path.dirname(__file__), 'my_logs_dir')
     """)
-    makefile(testdir, ['test_cases.py'], """
+    makefile(pytester.path / 'test_cases.py', """
         import pytest
 
         def test_simple():
@@ -353,18 +347,18 @@ def test_logsdir(testdir):
             pass
     """)
 
-    result = testdir.runpytest('-s')
+    result = pytester.runpytest('-s')
     assert result.ret == 0
-    assert 'my_logs_dir' in ls(testdir.tmpdir)
-    assert 'test_simple' in ls(testdir.tmpdir, 'my_logs_dir/test_cases.py')
-    assert 'test_param-x-a_b_c' in ls(testdir.tmpdir, 'my_logs_dir/test_cases.py')
-    assert 'test_param-y-d-e-f' in ls(testdir.tmpdir, 'my_logs_dir/test_cases.py')
-    assert 'test_param-z-g-h-i' in ls(testdir.tmpdir, 'my_logs_dir/test_cases.py')
-    assert 'test_param-v-j-1-k-1-l-1' in ls(testdir.tmpdir, 'my_logs_dir/test_cases.py')
+    assert 'my_logs_dir' in ls(pytester.path)
+    assert 'test_simple' in ls(pytester.path, 'my_logs_dir/test_cases.py')
+    assert 'test_param-x-a_b_c' in ls(pytester.path, 'my_logs_dir/test_cases.py')
+    assert 'test_param-y-d-e-f' in ls(pytester.path, 'my_logs_dir/test_cases.py')
+    assert 'test_param-z-g-h-i' in ls(pytester.path, 'my_logs_dir/test_cases.py')
+    assert 'test_param-v-j-1-k-1-l-1' in ls(pytester.path, 'my_logs_dir/test_cases.py')
 
 
-def test_format(testdir):
-    makefile(testdir, ['conftest.py'], """
+def test_format(pytester):
+    makefile(pytester.path / 'conftest.py', """
         import os
         import logging
         def pytest_logger_stdoutloggers(item):
@@ -372,7 +366,7 @@ def test_format(testdir):
         def pytest_logger_fileloggers(item):
             return ['']
     """)
-    makefile(testdir, ['test_case.py'], """
+    makefile(pytester.path / 'test_case.py', """
         import logging
         def test_case():
             lgr = logging.getLogger('foo')
@@ -384,7 +378,7 @@ def test_format(testdir):
             lgr.log(35, 'this is 35')
     """)
 
-    result = testdir.runpytest('-s')
+    result = pytester.runpytest('-s')
     assert result.ret == 0
 
     expected_lines = [
@@ -396,11 +390,11 @@ def test_format(testdir):
         '*:*.* l35 foo: this is 35',
     ]
     result.stdout.fnmatch_lines(expected_lines)
-    FileLineMatcher(basetemp(testdir), 'logs/test_case.py/test_case/logs').fnmatch_lines(expected_lines)
+    FileLineMatcher(basetemp(pytester) / 'logs/test_case.py/test_case/logs').fnmatch_lines(expected_lines)
 
 
-def test_multiple_conftests(testdir):
-    makefile(testdir, ['conftest.py'], """
+def test_multiple_conftests(pytester):
+    makefile(pytester.path / 'conftest.py', """
         import os
         def pytest_logger_stdoutloggers(item):
             return ['foo']
@@ -409,7 +403,7 @@ def test_multiple_conftests(testdir):
         def pytest_logger_logdirlink(config):
             return os.path.join(os.path.dirname(__file__), 'logs')
     """)
-    makefile(testdir, ['subdir', 'conftest.py'], """
+    makefile(pytester.path / 'subdir' / 'conftest.py', """
         import os
         def pytest_logger_stdoutloggers(item):
             return ['bar']
@@ -418,20 +412,20 @@ def test_multiple_conftests(testdir):
         def pytest_logger_logdirlink(config):
             return os.path.join(os.path.dirname(__file__), 'logs')
     """)
-    makefile(testdir, ['subdir', 'test_case.py'], """
+    makefile(pytester.path / 'subdir' / 'test_case.py', """
         import logging
         def test_case():
             for lgr in (logging.getLogger(name) for name in ['foo', 'bar']):
                 lgr.warning('this is warning')
     """)
-    makefile(testdir, ['makes_nodeid_in_pytest29_contain_subdir_name', 'empty'], '')
+    makefile(pytester.path / 'makes_nodeid_in_pytest29_contain_subdir_name' / 'empty', '')
 
-    result = testdir.runpytest('subdir', 'makes_nodeid_in_pytest29_contain_subdir_name', '-s')
+    result = pytester.runpytest('subdir', 'makes_nodeid_in_pytest29_contain_subdir_name', '-s')
     assert result.ret == 0
 
     if not win32py2:
-        assert ls(testdir.tmpdir, 'logs/subdir/test_case.py') == ['test_case']
-        assert ls(testdir.tmpdir, 'subdir/logs/subdir/test_case.py') == ['test_case']
+        assert ls(pytester.path, 'logs/subdir/test_case.py') == ['test_case']
+        assert ls(pytester.path, 'subdir/logs/subdir/test_case.py') == ['test_case']
 
     result.stdout.fnmatch_lines([
         '',
@@ -442,16 +436,16 @@ def test_multiple_conftests(testdir):
         ''
     ])
 
-    FileLineMatcher(basetemp(testdir), 'logs/subdir/test_case.py/test_case/foo').fnmatch_lines([
+    FileLineMatcher(basetemp(pytester) / 'logs/subdir/test_case.py/test_case/foo').fnmatch_lines([
         '* foo: this is warning',
     ])
-    FileLineMatcher(basetemp(testdir), 'logs/subdir/test_case.py/test_case/bar').fnmatch_lines([
+    FileLineMatcher(basetemp(pytester) / 'logs/subdir/test_case.py/test_case/bar').fnmatch_lines([
         '* bar: this is warning',
     ])
 
 
-def test_skip_gracefully(testdir):
-    makefile(testdir, ['conftest.py'], """
+def test_skip_gracefully(pytester):
+    makefile(pytester.path / 'conftest.py', """
         import os
         def pytest_logger_stdoutloggers(item):
             return ['foo']
@@ -460,23 +454,23 @@ def test_skip_gracefully(testdir):
         def pytest_logger_logdirlink(config):
             return os.path.join(os.path.dirname(__file__), 'logs')
     """)
-    makefile(testdir, ['test_case.py'], """
+    makefile(pytester.path / 'test_case.py', """
         import pytest
         @pytest.mark.skipif(True, reason='')
         def test_case():
             pass
     """)
 
-    result = testdir.runpytest('-s')
+    result = pytester.runpytest('-s')
     assert result.ret == 0
 
-    assert 'logs' not in ls(testdir.tmpdir)
+    assert 'logs' not in ls(pytester.path)
 
 
 @pytest.mark.skipif(win32pypy, reason="pytest-xdist crashes on win32 under pypy")
-def test_xdist(testdir):
+def test_xdist(pytester):
     N = 8
-    makefile(testdir, ['conftest.py'], """
+    makefile(pytester.path / 'conftest.py', """
         import os
         def pytest_logger_stdoutloggers(item):
             return ['foo']
@@ -486,27 +480,26 @@ def test_xdist(testdir):
             return os.path.join(os.path.dirname(__file__), 'logs')
     """)
     for index in range(N):
-        makefile(testdir, ['test_case%s.py' % index], """
+        makefile(pytester.path / f'test_case{index}.py', """
             import logging
             def test_case{0}():
                 logging.getLogger('foo').warning('this is test {0}')
         """.format(index))
 
-    result = testdir.runpytest('-n3')
+    result = pytester.runpytest('-n3')
     assert result.ret == 0
 
     if not win32py2:
-        assert ls(testdir.tmpdir, 'logs') == ['test_case%s.py' % i for i in range(N)]
+        assert ls(pytester.path, 'logs') == ['test_case%s.py' % i for i in range(N)]
 
     for index in range(N):
         logfilename = 'logs/test_case{0}.py/test_case{0}/foo'.format(index)
-        FileLineMatcher(basetemp(testdir), logfilename).fnmatch_lines(['* wrn foo: this is test %s' % index])
+        FileLineMatcher(basetemp(pytester) / logfilename).fnmatch_lines(['* wrn foo: this is test %s' % index])
 
 
-def test_logsdir_option(testdir, conftest_py, test_case_py):
-
-    logsdir = outdir(testdir, 'myinilogs')
-    result = testdir.runpytest('-s', '--logger-logsdir={0}'.format(str(logsdir)))
+def test_logsdir_option(pytester, conftest_py, test_case_py):
+    logsdir = pytester.path / 'myinilogs'
+    result = pytester.runpytest('-s', '--logger-logsdir={0}'.format(str(logsdir)))
     assert result.ret == 0
     result.stdout.fnmatch_lines([
         '',
@@ -514,28 +507,27 @@ def test_logsdir_option(testdir, conftest_py, test_case_py):
         '',
     ])
 
-    assert ls(logsdir) == [test_case_py]
-    assert ls(logsdir, test_case_py) == ['test_case']
-    assert ls(logsdir, '{0}/test_case'.format(test_case_py)) == ['bar', 'foo']
+    assert ls(logsdir) == [test_case_py.name]
+    assert ls(logsdir, test_case_py.name) == ['test_case']
+    assert ls(logsdir, '{0}/test_case'.format(test_case_py.name)) == ['bar', 'foo']
 
-    FileLineMatcher(logsdir, '{0}/test_case/foo'.format(test_case_py)).fnmatch_lines([
+    FileLineMatcher(logsdir / '{0}/test_case/foo'.format(test_case_py.name)).fnmatch_lines([
         '* foo: this is error',
         '* foo: this is warning',
     ])
-    FileLineMatcher(logsdir, '{0}/test_case/bar'.format(test_case_py)).fnmatch_lines([
+    FileLineMatcher(logsdir / '{0}/test_case/bar'.format(test_case_py.name)).fnmatch_lines([
         '* bar: this is error',
     ])
 
 
-def test_logsdir_ini(testdir, conftest_py, test_case_py):
-
-    logsdir = outdir(testdir, 'myinilogs')
-    makefile(testdir, ['pytest.ini'], """
+def test_logsdir_ini(pytester, conftest_py, test_case_py):
+    logsdir = pytester.path / 'myinilogs'
+    makefile(pytester.path / 'pytest.ini', """
         [pytest]
         logger_logsdir={0}
     """.format(logsdir))
 
-    result = testdir.runpytest('-s')
+    result = pytester.runpytest('-s')
     assert result.ret == 0
     result.stdout.fnmatch_lines([
         '',
@@ -543,32 +535,31 @@ def test_logsdir_ini(testdir, conftest_py, test_case_py):
         '',
     ])
 
-    assert ls(logsdir) == [test_case_py]
-    assert ls(logsdir, test_case_py) == ['test_case']
-    assert ls(logsdir, '{0}/test_case'.format(test_case_py)) == ['bar', 'foo']
+    assert ls(logsdir) == [test_case_py.name]
+    assert ls(logsdir, test_case_py.name) == ['test_case']
+    assert ls(logsdir, '{0}/test_case'.format(test_case_py.name)) == ['bar', 'foo']
 
-    FileLineMatcher(logsdir, '{0}/test_case/foo'.format(test_case_py)).fnmatch_lines([
+    FileLineMatcher(logsdir / '{0}/test_case/foo'.format(test_case_py.name)).fnmatch_lines([
         '* foo: this is error',
         '* foo: this is warning',
     ])
-    FileLineMatcher(logsdir, '{0}/test_case/bar'.format(test_case_py)).fnmatch_lines([
+    FileLineMatcher(logsdir / '{0}/test_case/bar'.format(test_case_py.name)).fnmatch_lines([
         '* bar: this is error',
     ])
 
 
-def test_logsdir_cleanup(testdir, conftest_py, test_case_py):
+def test_logsdir_cleanup(pytester, conftest_py, test_case_py):
+    logsdir = pytester.path / 'myinilogs'
 
-    logsdir = outdir(testdir, 'myinilogs')
-
-    makefile(testdir, ['pytest.ini'], """
+    makefile(pytester.path / 'pytest.ini', """
         [pytest]
         logger_logsdir={0}
     """.format(logsdir))
+    makefile(logsdir / 'tmpfile', """
+        this shall be removed
+    """)
 
-    logsdir.ensure('tmpfile').write(textwrap.dedent('this shall be removed'))
-    logsdir.join('tmpdir')
-
-    result = testdir.runpytest('-s')
+    result = pytester.runpytest('-s')
     assert result.ret == 0
     result.stdout.fnmatch_lines([
         '',
@@ -576,28 +567,28 @@ def test_logsdir_cleanup(testdir, conftest_py, test_case_py):
         '',
     ])
 
-    assert ls(logsdir) == [test_case_py]
-    assert ls(logsdir, test_case_py) == ['test_case']
-    assert ls(logsdir, '{0}/test_case'.format(test_case_py)) == ['bar', 'foo']
+    assert ls(logsdir) == [test_case_py.name]
+    assert ls(logsdir, test_case_py.name) == ['test_case']
+    assert ls(logsdir, '{0}/test_case'.format(test_case_py.name)) == ['bar', 'foo']
 
-    FileLineMatcher(logsdir, '{0}/test_case/foo'.format(test_case_py)).fnmatch_lines([
+    FileLineMatcher(logsdir / '{0}/test_case/foo'.format(test_case_py.name)).fnmatch_lines([
         '* foo: this is error',
         '* foo: this is warning',
     ])
-    FileLineMatcher(logsdir, '{0}/test_case/bar'.format(test_case_py)).fnmatch_lines([
+    FileLineMatcher(logsdir / '{0}/test_case/bar'.format(test_case_py.name)).fnmatch_lines([
         '* bar: this is error',
     ])
 
 
-def test_logger_config(testdir, test_case_py):
-    makefile(testdir, ['conftest.py'], """
+def test_logger_config(pytester, test_case_py):
+    makefile(pytester.path / 'conftest.py', """
         def pytest_logger_config(logger_config):
             logger_config.add_loggers(['foo', 'bar'], stdout_level='warning', file_level='info')
             logger_config.add_loggers(['baz'], stdout_level='error', file_level='warning')
             logger_config.set_log_option_default('foo,bar,baz')
     """)
 
-    result = testdir.runpytest('-s')
+    result = pytester.runpytest('-s')
     assert result.ret == 0
 
     result.stdout.fnmatch_lines([
@@ -611,32 +602,32 @@ def test_logger_config(testdir, test_case_py):
         '.',
         '',
     ])
-    FileLineMatcher(basetemp(testdir), 'logs/test_case.py/test_case/foo').fnmatch_lines([
+    FileLineMatcher(basetemp(pytester) / 'logs/test_case.py/test_case/foo').fnmatch_lines([
         '* err foo: this is error',
         '* wrn foo: this is warning',
         '* inf foo: this is info',
     ])
-    FileLineMatcher(basetemp(testdir), 'logs/test_case.py/test_case/bar').fnmatch_lines([
+    FileLineMatcher(basetemp(pytester) / 'logs/test_case.py/test_case/bar').fnmatch_lines([
         '* err bar: this is error',
         '* wrn bar: this is warning',
         '* inf bar: this is info',
     ])
-    FileLineMatcher(basetemp(testdir), 'logs/test_case.py/test_case/baz').fnmatch_lines([
+    FileLineMatcher(basetemp(pytester) / 'logs/test_case.py/test_case/baz').fnmatch_lines([
         '* err baz: this is error',
         '* wrn baz: this is warning',
     ])
 
 
 @pytest.mark.parametrize('log_option', ('', '--loggers=foo.info,baz'))
-def test_logger_config_option(testdir, test_case_py, log_option):
-    makefile(testdir, ['conftest.py'], """
+def test_logger_config_option(pytester, test_case_py, log_option):
+    makefile(pytester.path / 'conftest.py', """
         def pytest_logger_config(logger_config):
             logger_config.add_loggers(['foo', 'bar'])
             logger_config.add_loggers(['baz'], file_level='error')
     """)
 
     opts = ('-s', log_option) if log_option else ('-s',)
-    result = testdir.runpytest(*opts)
+    result = pytester.runpytest(*opts)
     assert result.ret == 0
 
     if log_option:
@@ -659,8 +650,8 @@ def test_logger_config_option(testdir, test_case_py, log_option):
 
 
 @pytest.mark.parametrize('log_option', ('', '--loggers=foo.info,baz'))
-def test_logger_config_formatter(testdir, test_case_py, log_option):
-    makefile(testdir, ['conftest.py'], """
+def test_logger_config_formatter(pytester, test_case_py, log_option):
+    makefile(pytester.path / 'conftest.py', """
         import logging
 
         def pytest_logger_config(logger_config):
@@ -670,7 +661,7 @@ def test_logger_config_formatter(testdir, test_case_py, log_option):
     """)
 
     opts = ('-s', log_option) if log_option else ('-s',)
-    result = testdir.runpytest(*opts)
+    result = pytester.runpytest(*opts)
     assert result.ret == 0
 
     if log_option:
@@ -693,8 +684,8 @@ def test_logger_config_formatter(testdir, test_case_py, log_option):
 
 
 @pytest.mark.parametrize('with_hook', (False, True))
-def test_logger_config_option_missing_without_hook(testdir, test_case_py, with_hook):
-    makefile(testdir, ['conftest.py'], """
+def test_logger_config_option_missing_without_hook(pytester, test_case_py, with_hook):
+    makefile(pytester.path / 'conftest.py', """
         def pytest_addoption(parser):
             parser.addoption('--loggers')
     """ + ("""
@@ -703,7 +694,7 @@ def test_logger_config_option_missing_without_hook(testdir, test_case_py, with_h
             logger_config.add_loggers(['baz'], stdout_level='error', file_level='warning')
     """ if with_hook else ""))
 
-    result = testdir.runpytest('-s', '--loggers=foo')
+    result = pytester.runpytest('-s', '--loggers=foo')
     assert result.ret == (3 if with_hook else 0)
 
     if with_hook:
@@ -714,8 +705,8 @@ def test_logger_config_option_missing_without_hook(testdir, test_case_py, with_h
 
 @pytest.mark.parametrize('stdout_hook', (False, True))
 @pytest.mark.parametrize('config_hook', (False, True))
-def test_error_both_hook_apis_used(testdir, test_case_py, stdout_hook, config_hook):
-    makefile(testdir, ['conftest.py'], ("""
+def test_error_both_hook_apis_used(pytester, test_case_py, stdout_hook, config_hook):
+    makefile(pytester.path / 'conftest.py', ("""
         def pytest_logger_stdoutloggers(item):
             return ['foo']
     """ if stdout_hook else '') + ("""
@@ -723,7 +714,7 @@ def test_error_both_hook_apis_used(testdir, test_case_py, stdout_hook, config_ho
             logger_config.add_loggers(['foo'])
     """ if config_hook else ''))
 
-    result = testdir.runpytest('-s')
+    result = pytester.runpytest('-s')
     assert result.ret == (1 if (stdout_hook and config_hook) else 0)
 
     if stdout_hook and config_hook:
@@ -732,7 +723,7 @@ def test_error_both_hook_apis_used(testdir, test_case_py, stdout_hook, config_ho
         ])
 
 
-def test_help_prints(testdir, test_case_py):
+def test_help_prints(pytester, test_case_py):
     """
     Pytest doesn't evaluate group.addoption(..., type=...) option when run with --help option.
     This causes log option string to remain as unchecked string instead of a list in expected format.
@@ -741,13 +732,13 @@ def test_help_prints(testdir, test_case_py):
     To remedy this hack checking whether option has been parsed was made.
     This test ensures that it keeps working.
     """
-    makefile(testdir, ['conftest.py'], ("""
+    makefile(pytester.path / 'conftest.py', """
         def pytest_logger_config(logger_config):
             logger_config.add_loggers(['foo'])
             logger_config.set_log_option_default('foo')
-    """))
+    """)
 
-    result = testdir.runpytest('-s', '--help')
+    result = pytester.runpytest('-s', '--help')
     assert result.ret == 0
 
 
@@ -760,14 +751,14 @@ def test_works_with_progress_percentage_prints():
     assert False
 
 
-def test_collects_teardown_logs(testdir):
-    makefile(testdir, ['conftest.py'], """
+def test_collects_teardown_logs(pytester):
+    makefile(pytester.path / 'conftest.py', """
         def pytest_logger_config(logger_config):
             logger_config.add_loggers(['foo'])
             logger_config.set_log_option_default('foo')
     """)
 
-    makefile(testdir, ['test_bar.py'], """
+    makefile(pytester.path / 'test_bar.py', """
         import logging
         import pytest
         logger = logging.getLogger('foo')
@@ -782,10 +773,10 @@ def test_collects_teardown_logs(testdir):
             logger.info('test_bar')
     """)
 
-    result = testdir.runpytest()
+    result = pytester.runpytest()
     assert result.ret == 0
 
-    FileLineMatcher(basetemp(testdir), 'logs/test_bar.py/test_bar/foo').fnmatch_lines([
+    FileLineMatcher(basetemp(pytester) / 'logs/test_bar.py/test_bar/foo').fnmatch_lines([
         '* inf foo: setup',
         '* inf foo: test_bar',
         '* inf foo: teardown',
