@@ -195,8 +195,8 @@ def test_file_handlers(pytester, conftest_py, test_case_py):
     ])
 
     assert ls(basetemp(pytester), 'logs') == [test_case_py.name]
-    assert ls(basetemp(pytester), 'logs/{0}'.format(test_case_py.name)) == ['test_case']
-    assert ls(basetemp(pytester), 'logs/{0}/test_case'.format(test_case_py.name)) == ['bar', 'foo']
+    assert ls(basetemp(pytester), f'logs/{test_case_py.name}') == ['test_case']
+    assert ls(basetemp(pytester), f'logs/{test_case_py.name}/test_case') == ['bar', 'foo']
 
     FileLineMatcher(basetemp(pytester) / f'logs/{test_case_py.name}/test_case/foo').fnmatch_lines([
         '* foo: this is error',
@@ -473,11 +473,11 @@ def test_xdist(pytester):
             return os.path.join(os.path.dirname(__file__), 'logs')
     """)
     for index in range(N):
-        makefile(pytester.path / f'test_case{index}.py', """
+        makefile(pytester.path / f'test_case{index}.py', f"""
             import logging
-            def test_case{0}():
-                logging.getLogger('foo').warning('this is test {0}')
-        """.format(index))
+            def test_case{index}():
+                logging.getLogger('foo').warning('this is test {index}')
+        """)
 
     result = pytester.runpytest('-n3')
     assert result.ret == 0
@@ -485,13 +485,13 @@ def test_xdist(pytester):
     assert ls(pytester.path, 'logs') == ['test_case%s.py' % i for i in range(N)]
 
     for index in range(N):
-        logfilename = 'logs/test_case{0}.py/test_case{0}/foo'.format(index)
+        logfilename = f'logs/test_case{index}.py/test_case{index}/foo'
         FileLineMatcher(basetemp(pytester) / logfilename).fnmatch_lines(['* wrn foo: this is test %s' % index])
 
 
 def test_logsdir_option(pytester, conftest_py, test_case_py):
     logsdir = pytester.path / 'myinilogs'
-    result = pytester.runpytest('-s', '--logger-logsdir={0}'.format(str(logsdir)))
+    result = pytester.runpytest('-s', f'--logger-logsdir={logsdir}')
     assert result.ret == 0
     result.stdout.fnmatch_lines([
         '',
@@ -501,23 +501,23 @@ def test_logsdir_option(pytester, conftest_py, test_case_py):
 
     assert ls(logsdir) == [test_case_py.name]
     assert ls(logsdir, test_case_py.name) == ['test_case']
-    assert ls(logsdir, '{0}/test_case'.format(test_case_py.name)) == ['bar', 'foo']
+    assert ls(logsdir, f'{test_case_py.name}/test_case') == ['bar', 'foo']
 
-    FileLineMatcher(logsdir / '{0}/test_case/foo'.format(test_case_py.name)).fnmatch_lines([
+    FileLineMatcher(logsdir / f'{test_case_py.name}/test_case/foo').fnmatch_lines([
         '* foo: this is error',
         '* foo: this is warning',
     ])
-    FileLineMatcher(logsdir / '{0}/test_case/bar'.format(test_case_py.name)).fnmatch_lines([
+    FileLineMatcher(logsdir / f'{test_case_py.name}/test_case/bar').fnmatch_lines([
         '* bar: this is error',
     ])
 
 
 def test_logsdir_ini(pytester, conftest_py, test_case_py):
     logsdir = pytester.path / 'myinilogs'
-    makefile(pytester.path / 'pytest.ini', """
+    makefile(pytester.path / 'pytest.ini', f"""
         [pytest]
-        logger_logsdir={0}
-    """.format(logsdir))
+        logger_logsdir={logsdir}
+    """)
 
     result = pytester.runpytest('-s')
     assert result.ret == 0
@@ -529,13 +529,13 @@ def test_logsdir_ini(pytester, conftest_py, test_case_py):
 
     assert ls(logsdir) == [test_case_py.name]
     assert ls(logsdir, test_case_py.name) == ['test_case']
-    assert ls(logsdir, '{0}/test_case'.format(test_case_py.name)) == ['bar', 'foo']
+    assert ls(logsdir, f'{test_case_py.name}/test_case') == ['bar', 'foo']
 
-    FileLineMatcher(logsdir / '{0}/test_case/foo'.format(test_case_py.name)).fnmatch_lines([
+    FileLineMatcher(logsdir / f'{test_case_py.name}/test_case/foo').fnmatch_lines([
         '* foo: this is error',
         '* foo: this is warning',
     ])
-    FileLineMatcher(logsdir / '{0}/test_case/bar'.format(test_case_py.name)).fnmatch_lines([
+    FileLineMatcher(logsdir / f'{test_case_py.name}/test_case/bar').fnmatch_lines([
         '* bar: this is error',
     ])
 
@@ -543,10 +543,10 @@ def test_logsdir_ini(pytester, conftest_py, test_case_py):
 def test_logsdir_cleanup(pytester, conftest_py, test_case_py):
     logsdir = pytester.path / 'myinilogs'
 
-    makefile(pytester.path / 'pytest.ini', """
+    makefile(pytester.path / 'pytest.ini', f"""
         [pytest]
-        logger_logsdir={0}
-    """.format(logsdir))
+        logger_logsdir={logsdir}
+    """)
     makefile(logsdir / 'tmpfile', """
         this shall be removed
     """)
@@ -561,13 +561,13 @@ def test_logsdir_cleanup(pytester, conftest_py, test_case_py):
 
     assert ls(logsdir) == [test_case_py.name]
     assert ls(logsdir, test_case_py.name) == ['test_case']
-    assert ls(logsdir, '{0}/test_case'.format(test_case_py.name)) == ['bar', 'foo']
+    assert ls(logsdir, f'{test_case_py.name}/test_case') == ['bar', 'foo']
 
-    FileLineMatcher(logsdir / '{0}/test_case/foo'.format(test_case_py.name)).fnmatch_lines([
+    FileLineMatcher(logsdir / f'{test_case_py.name}/test_case/foo').fnmatch_lines([
         '* foo: this is error',
         '* foo: this is warning',
     ])
-    FileLineMatcher(logsdir / '{0}/test_case/bar'.format(test_case_py.name)).fnmatch_lines([
+    FileLineMatcher(logsdir / f'{test_case_py.name}/test_case/bar').fnmatch_lines([
         '* bar: this is error',
     ])
 
