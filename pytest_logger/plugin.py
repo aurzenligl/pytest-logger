@@ -100,14 +100,13 @@ class LoggerPlugin:
         if logger:
             logger.on_teardown()
 
-    @pytest.hookimpl(hookwrapper=True)
+    @pytest.hookimpl(wrapper=True)
     def pytest_runtest_makereport(self, item, call):
-        outcome = yield
-        tr = outcome.get_result()
+        report = yield
         logger = getattr(item, '_logger', None)
         if logger:
-            if self._logsdir and self._split_by_outcome_subdir and tr.outcome in self._split_by_outcome_outcomes:
-                split_by_outcome_logdir = self._logsdir / self._split_by_outcome_subdir / tr.outcome
+            if self._logsdir and self._split_by_outcome_subdir and report.outcome in self._split_by_outcome_outcomes:
+                split_by_outcome_logdir = self._logsdir / self._split_by_outcome_subdir / report.outcome
                 nodeid = _sanitize_nodeid(item.nodeid)
                 nodepath = os.path.dirname(nodeid)
                 outcomedir = split_by_outcome_logdir / nodepath
@@ -116,6 +115,7 @@ class LoggerPlugin:
                 _refresh_link(destdir_relpath, split_by_outcome_logdir / nodeid)
             if call.when == 'teardown':
                 logger.on_makereport()
+        return report
 
 
 class LoggerState:
