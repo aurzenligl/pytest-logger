@@ -22,16 +22,6 @@ def basetemp(pytester):
     return pytester.path.parent / 'basetemp'
 
 
-@pytest.fixture(autouse=True)
-def set_classic_output(monkeypatch, pytester):
-    runpytest = pytester.runpytest
-
-    def wrapper(*args, **kwargs):
-        return runpytest('--override-ini=console_output_style=classic', *args, **kwargs)
-
-    monkeypatch.setattr(pytester, 'runpytest', wrapper)
-
-
 @pytest.fixture
 def conftest_py(pytester):
     return makefile(pytester.path / 'conftest.py', """
@@ -135,7 +125,7 @@ def test_stdout_handlers(pytester):
     assert result.ret == 0
     result.stdout.fnmatch_lines([
         '',
-        'test_case.py .',
+        'test_case.py . *',
         '',
     ])
 
@@ -732,15 +722,6 @@ def test_help_prints(pytester, test_case_py):
 
     result = pytester.runpytest('-s', '--help')
     assert result.ret == 0
-
-
-@pytest.mark.skip("Since pytest v3.3 progress percentage is being displayed by default during test execution. "
-                  "It interferes with most of the old test cases that assert stdout/err so to not change them, we are "
-                  "now forcing classic output with a set_classic_output auto-use fixture which overrides pytest's "
-                  "console_output_style. We could have at least one test that proves the plugin can work in the new"
-                  "default mode as well.")
-def test_works_with_progress_percentage_prints():
-    assert False
 
 
 def test_collects_teardown_logs(pytester):
