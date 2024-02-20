@@ -318,6 +318,7 @@ class DefaultFormatter(logging.Formatter):
 
 @pytest.fixture
 def logdir(request):
+    """ Return a path to log directory for the test function """
     return _make_logdir(request._pyfuncitem)
 
 
