@@ -57,8 +57,11 @@ class EarlyLoggerPlugin:
 
 class LoggerPlugin:
     def __init__(self, config, logcfg):
+        def prepare_logdirlink(path: Path):
+            return path if path.is_absolute() else config.rootpath / path
+
         self._config = config
-        self._logdirlinks = config.hook.pytest_logger_logdirlink(config=config)
+        self._logdirlinks = [prepare_logdirlink(Path(d)) for d in config.hook.pytest_logger_logdirlink(config=config)]
         self._loggers = _loggers_from_logcfg(logcfg, config.getoption('loggers')) if logcfg._enabled else None
         self._formatter_class = logcfg._formatter_class or DefaultFormatter
         self._logsdir = None
@@ -267,7 +270,8 @@ class LoggerHookspec:
 
         :arg config: pytest config object, holds e.g. options
 
-        :return string: Absolute path of requested link to logs directory.
+        :return string: Path of requested link to logs directory.
+                        When relative, it's relative to pytest session rootdir
         """
 
     @pytest.hookspec(firstresult=True)

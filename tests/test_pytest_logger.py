@@ -308,6 +308,25 @@ def test_logdir_link(pytester):
     assert ['test_case'] == ls(pytester.path / 'my_link_dir/test_case.py')
 
 
+def test_logdir_link_relative(pytester):
+    makefile(pytester.path / 'root' / 'conftest.py', """
+        import os
+        def pytest_logger_fileloggers(item):
+            return ['']
+        def pytest_logger_logdirlink(config):
+            return '.logs'
+    """)
+    makefile(pytester.path / 'root' / 'test_case.py', """
+        def test_case():
+            pass
+    """)
+
+    result = pytester.runpytest('--rootdir=root', 'root', '-s')
+    assert result.ret == 0
+    assert '.logs' in ls(pytester.path / 'root')
+    assert ['test_case'] == ls(pytester.path / 'root' / '.logs' / 'test_case.py')
+
+
 def test_logsdir(pytester):
     makefile(pytester.path / 'conftest.py', """
         import os
