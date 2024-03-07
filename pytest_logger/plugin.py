@@ -307,7 +307,7 @@ class DefaultFormatter(logging.Formatter):
 
     def formatTime(self, record, datefmt=None):
         ct = record.created - self._start
-        dt = datetime.datetime.utcfromtimestamp(ct)
+        dt = datetime.datetime.fromtimestamp(ct, tz=datetime.timezone.utc)
         return dt.strftime("%M:%S.%f")[:-3]  # omit useconds, leave mseconds
 
     def format(self, record):
